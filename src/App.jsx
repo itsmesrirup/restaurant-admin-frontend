@@ -4,6 +4,7 @@ import LoginPage from './components/LoginPage';
 import OrderDashboard from './components/OrderDashboard';
 import MenuManagement from './components/MenuManagement';
 import { Toaster } from 'react-hot-toast';
+import ReservationManagement from './components/ReservationManagement';
 
 function App() {
   // 1. Get the token from the AuthContext
@@ -36,6 +37,7 @@ function App() {
         <div>
             <button onClick={() => setView('orders')} style={{ marginRight: '10px' }}>Live Orders</button>
             <button onClick={() => setView('menu')} style={{ marginRight: '10px' }}>Menu Management</button>
+            <button onClick={() => setView('reservations')}>Reservations</button>
             <button onClick={logout}>Logout</button>
         </div>
       </nav>
@@ -44,6 +46,7 @@ function App() {
       <main style={{ padding: '1rem' }}>
         {view === 'orders' && <OrderDashboard />}
         {view === 'menu' && <MenuManagement />}
+        {view === 'reservations' && <ReservationManagement />}
       </main>
     </div>
   );

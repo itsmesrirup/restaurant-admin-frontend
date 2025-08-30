@@ -22,7 +22,7 @@ function OrderDashboard() {
         if (!user) return;
         
         // Only show the main loading indicator on the very first load
-        if (orders.length === 0) {
+        if (isInitialLoad === 0) {
             setIsFetching(true);
         }
         
@@ -44,7 +44,7 @@ function OrderDashboard() {
 
     // This effect runs the fetchOrders function on mount and sets up a polling interval
     useEffect(() => {
-        fetchOrders(); // Initial fetch
+        fetchOrders(true); // Initial fetch
         const interval = setInterval(fetchOrders, 15000); // Refresh every 15 seconds
         
         // Cleanup function to clear the interval when the component unmounts
