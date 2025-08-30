@@ -17,30 +17,30 @@ function OrderDashboard() {
     const [filter, setFilter] = useState('PENDING'); // Default to showing new orders first
 
     // --- DATA FETCHING ---
-    const fetchOrders = useCallback(async () => {
-        // Guard clause: Don't fetch if the user object isn't loaded yet
+    const fetchOrders = useCallback(async (isInitial = false) => {
         if (!user) return;
         
-        // Only show the main loading indicator on the very first load
-        if (isInitialLoad === 0) {
+        if (isInitial) {
             setIsFetching(true);
         }
         
         try {
-            const data = await api.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/byRestaurant/${user.restaurantId}`);
-            // Sort by ID descending to show the newest orders on top
+            const data = await api.get(`/api/orders/byRestaurant/${user.restaurantId}`);
             data.sort((a, b) => b.id - a.id);
             setOrders(data);
         } catch (error) {
             console.error("Failed to fetch orders:", error);
-            // Show an error toast only if it's not the silent background refresh
-            if (isFetching) {
-                toast.error("Could not load orders. Please try again.");
+            // Only show the toast on the initial load, not on silent background refreshes.
+            if (isInitial) {
+                toast.error("Could not load orders.");
             }
         } finally {
-            setIsFetching(false);
+            // Always set isFetching to false after the initial load attempt.
+            if (isInitial) {
+                setIsFetching(false);
+            }
         }
-    }, [user, api, isFetching, orders.length]);
+    }, [user, api]);
 
     // This effect runs the fetchOrders function on mount and sets up a polling interval
     useEffect(() => {
