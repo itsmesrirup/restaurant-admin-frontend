@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth, apiClient } from '../context/AuthContext';
+import { useAuth, apiClient } from '../context/AuthContext'; // ✅ Import apiClient
 import { toast } from 'react-hot-toast';
 
 function ReservationManagement() {
@@ -11,9 +11,7 @@ function ReservationManagement() {
         if (!user) return;
         setIsFetching(true);
         try {
-            // Uses the new protected endpoint
-            const data = await apiClient.get('/api/reservations/by-restaurant');
-            // Sort by reservation time, newest first
+            const data = await apiClient.get('/api/reservations/by-restaurant'); // ✅ Use apiClient
             data.sort((a, b) => new Date(b.reservationTime) - new Date(a.reservationTime));
             setReservations(data);
         } catch (error) {
@@ -28,7 +26,7 @@ function ReservationManagement() {
     }, [fetchReservations]);
 
     const handleUpdateStatus = (reservationId, status) => {
-        const promise = apiClient.patch(`/api/reservations/${reservationId}/status`, { status });
+        const promise = apiClient.patch(`/api/reservations/${reservationId}/status`, { status }); // ✅ Use apiClient
         toast.promise(promise, {
             loading: 'Updating status...',
             success: () => {
@@ -39,9 +37,10 @@ function ReservationManagement() {
         });
     };
     
-    if (isFetching) return <p>Loading reservations...</p>;
+    if (!user || isFetching) return <p>Loading reservations...</p>;
 
     return (
+        // ... The rest of the JSX is the same and correct
         <div>
             <h2>Reservation Management for {user.restaurantName}</h2>
             {reservations.length === 0 ? (
