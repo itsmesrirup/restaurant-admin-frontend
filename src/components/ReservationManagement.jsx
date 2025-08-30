@@ -21,7 +21,7 @@ function ReservationManagement() {
         } finally {
             setIsFetching(false);
         }
-    }, [user, api]);
+    }, [user]);
 
     useEffect(() => {
         fetchReservations();
