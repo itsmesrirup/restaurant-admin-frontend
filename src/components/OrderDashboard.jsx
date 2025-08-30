@@ -10,23 +10,28 @@ function OrderDashboard() {
 
     const fetchOrders = useCallback(async () => {
         if (!user) return;
+        if (isInitial) {
+            setIsFetching(true);
+        }
         try {
             // Use the imported apiClient directly. It knows the full URL.
             const data = await apiClient.get(`/api/orders/byRestaurant/${user.restaurantId}`);
             data.sort((a, b) => b.id - a.id);
             setOrders(data);
         } catch (error) {
-            // Only show the toast on the initial load, not on silent background refreshes.
-            if(isFetching) toast.error("Could not load orders.");
+            console.error("Failed to fetch orders:", error);
+            if (isInitial) {
+                toast.error("Could not load orders.");
+            }
         } finally {
             setIsFetching(false);
         }
-    }, [user, isFetching]); // Re-run if user changes
+    }, [user]); // Re-run if user changes
 
     useEffect(() => {
-        setIsFetching(true); // Set loading to true when user becomes available
-        fetchOrders();
-        const interval = setInterval(fetchOrders, 15000);
+        fetchOrders(true); // Initial fetch
+        // The interval will call the same stable 'fetchOrders' function
+        const interval = setInterval(() => fetchOrders(false), 15000); 
         return () => clearInterval(interval);
     }, [fetchOrders]);
 
@@ -51,7 +56,7 @@ function OrderDashboard() {
         return orders.filter(order => order.status === filter);
     }, [orders, filter]);
 
-    if (!user || isFetching) {
+    if (isFetching) {
         return <p>Loading live orders...</p>;
     }
 
