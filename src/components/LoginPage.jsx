@@ -1,35 +1,22 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
 function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { login } = useAuth();
-    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
+        setIsLoading(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/authenticate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-            
-            if (!response.ok) {
-                throw new Error('Login failed! Please check your email and password.');
-            }
-
-            const data = await response.json();
-            if (data.token) {
-                login(data.token);
-            } else {
-                setError('Login failed! No token received.');
-            }
+            await login(email, password);
         } catch (err) {
-            console.error('Login error', err);
-            setError(err.message);
+            toast.error(err.message || 'Login failed!');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -59,9 +46,12 @@ function LoginPage() {
                         style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                     />
                 </div>
-                {error && <p style={{ color: 'red' }}>{error}</p>}
-                <button type="submit" style={{ width: '100%', padding: '10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}>
-                    Login
+                <button 
+                    type="submit" 
+                    disabled={isLoading}
+                    style={{ width: '100%', padding: '10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                    {isLoading ? 'Logging in...' : 'Login'}
                 </button>
             </form>
         </div>
