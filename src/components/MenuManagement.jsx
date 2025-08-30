@@ -56,8 +56,8 @@ function MenuManagement() {
         const payload = { ...formData, restaurantId: user.restaurantId };
         
         const promise = editingId 
-            ? api.put(`${import.meta.env.VITE_API_BASE_URL}/api/menu-items/${editingId}`, payload)
-            : api.post(`${import.meta.env.VITE_API_BASE_URL}/api/menu-items`, payload);
+            ? apiClient.put(`${import.meta.env.VITE_API_BASE_URL}/api/menu-items/${editingId}`, payload)
+            : apiClient.post(`${import.meta.env.VITE_API_BASE_URL}/api/menu-items`, payload);
 
         toast.promise(promise, {
             loading: editingId ? 'Updating item...' : 'Adding item...',
@@ -83,7 +83,7 @@ function MenuManagement() {
     const handleDelete = async (itemId) => {
         if (!window.confirm("Are you sure you want to delete this menu item?")) return;
         
-        const promise = api.delete(`${import.meta.env.VITE_API_BASE_URL}/api/menu-items/${itemId}`);
+        const promise = apiClient.delete(`${import.meta.env.VITE_API_BASE_URL}/api/menu-items/${itemId}`);
         
         toast.promise(promise, {
             loading: 'Deleting item...',
