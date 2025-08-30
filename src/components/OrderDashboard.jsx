@@ -1,39 +1,45 @@
+// File: restaurant-admin-frontend/src/components/OrderDashboard.jsx
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth, apiClient } from '../context/AuthContext'; // Import apiClient
+import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
 function OrderDashboard() {
     const { user } = useAuth();
     const [orders, setOrders] = useState([]);
-    const [isFetching, setIsFetching] = useState(true);
+    const [isFetchingInitial, setIsFetchingInitial] = useState(true); // Renamed for clarity
     const [filter, setFilter] = useState('PENDING');
 
+    // This function is stable and will not cause re-renders.
     const fetchOrders = useCallback(async () => {
         if (!user) return;
-        if (isInitial) {
-            setIsFetching(true);
-        }
+        
         try {
-            // Use the imported apiClient directly. It knows the full URL.
             const data = await apiClient.get(`/api/orders/byRestaurant/${user.restaurantId}`);
             data.sort((a, b) => b.id - a.id);
             setOrders(data);
         } catch (error) {
             console.error("Failed to fetch orders:", error);
-            if (isInitial) {
+            // Only show a toast if the initial fetch fails. Background refresh failures can be silent.
+            if (isFetchingInitial) {
                 toast.error("Could not load orders.");
             }
         } finally {
-            setIsFetching(false);
+            // This ensures the main "Loading..." message only appears once.
+            if (isFetchingInitial) {
+                setIsFetchingInitial(false);
+            }
         }
-    }, [user]); // Re-run if user changes
+    }, [user, isFetchingInitial]); // Depends on these stable or one-time-change variables
 
+    // This effect handles the initial load and sets up the polling.
     useEffect(() => {
-        fetchOrders(true); // Initial fetch
-        // The interval will call the same stable 'fetchOrders' function
-        const interval = setInterval(() => fetchOrders(false), 15000); 
-        return () => clearInterval(interval);
-    }, [fetchOrders]);
+        if (user) { // Only start fetching once the user profile is available
+            fetchOrders(); // Initial fetch
+            const interval = setInterval(fetchOrders, 15000); // Background refresh
+            return () => clearInterval(interval); // Cleanup on unmount
+        }
+    }, [user, fetchOrders]); // Re-run if the user changes
 
 
     const handleUpdateStatus = async (orderId, newStatus) => {
@@ -56,7 +62,8 @@ function OrderDashboard() {
         return orders.filter(order => order.status === filter);
     }, [orders, filter]);
 
-    if (isFetching) {
+    // Show loading indicator until the initial user profile AND the initial order fetch are done.
+    if (!user || isFetchingInitial) {
         return <p>Loading live orders...</p>;
     }
 
