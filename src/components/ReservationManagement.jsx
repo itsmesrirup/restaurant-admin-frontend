@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
 function ReservationManagement() {
-    const { user, api } = useAuth();
+    const { user } = useAuth();
     const [reservations, setReservations] = useState([]);
     const [isFetching, setIsFetching] = useState(true);
 
@@ -12,7 +12,7 @@ function ReservationManagement() {
         setIsFetching(true);
         try {
             // Uses the new protected endpoint
-            const data = await api.get('/api/reservations/by-restaurant');
+            const data = await apiClient.get('/api/reservations/by-restaurant');
             // Sort by reservation time, newest first
             data.sort((a, b) => new Date(b.reservationTime) - new Date(a.reservationTime));
             setReservations(data);
@@ -28,7 +28,7 @@ function ReservationManagement() {
     }, [fetchReservations]);
 
     const handleUpdateStatus = (reservationId, status) => {
-        const promise = api.patch(`/api/reservations/${reservationId}/status`, { status });
+        const promise = apiClient.patch(`/api/reservations/${reservationId}/status`, { status });
         toast.promise(promise, {
             loading: 'Updating status...',
             success: () => {

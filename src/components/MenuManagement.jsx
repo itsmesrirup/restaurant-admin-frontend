@@ -1,12 +1,12 @@
 // File: restaurant-admin-frontend/src/components/MenuManagement.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
 function MenuManagement() {
     // --- STATE MANAGEMENT ---
-    const { user, api } = useAuth(); // Hooks must be inside the component body
+    const { user } = useAuth(); // Hooks must be inside the component body
 
     const [menuItems, setMenuItems] = useState([]);
     const [formData, setFormData] = useState({ name: '', price: '', description: '' });
@@ -23,7 +23,8 @@ function MenuManagement() {
 
         setIsFetching(true);
         try {
-            const data = await api.get(`${import.meta.env.VITE_API_BASE_URL}/api/restaurants/${user.restaurantId}/menu`);
+            //const data = await api.get(`${import.meta.env.VITE_API_BASE_URL}/api/restaurants/${user.restaurantId}/menu`);
+            const data = await apiClient.get(`/api/restaurants/${user.restaurantId}/menu`);
             setMenuItems(data);
         } catch (error) {
             console.error("Failed to fetch menu items:", error);
@@ -31,7 +32,7 @@ function MenuManagement() {
         } finally {
             setIsFetching(false);
         }
-    }, [user, api]); // Effect depends on user and api client
+    }, [user]); // Effect depends on user and api client
 
     useEffect(() => {
         fetchMenuItems();
