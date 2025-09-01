@@ -1,28 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-// Import a Switch component from MUI for a nice toggle UI
-import { Switch, FormControlLabel } from '@mui/material';
+import { Switch, FormControlLabel, TextField, Button, Paper, Typography } from '@mui/material';
 
 function SettingsPage() {
     const { user } = useAuth();
+    // Initialize with fallback values to prevent errors
     const [settings, setSettings] = useState({
-        name: '',
-        address: '',
-        email: '',
-        reservationsEnabled: false,
-        qrCodeOrderingEnabled: false
+        name: '', address: '', email: '',
+        reservationsEnabled: false, qrCodeOrderingEnabled: false
     });
     const [isLoading, setIsLoading] = useState(true);
 
+    const fetchSettings = useCallback(async () => {
+        if (!user) return;
+        try {
+            const data = await apiClient.get('/api/restaurants/me');
+            setSettings(data);
+        } catch (error) {
+            toast.error("Failed to load settings.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user]);
+
     useEffect(() => {
-        // You need to create this GET /api/restaurants/me endpoint
-        apiClient.get('/api/restaurants/me')
-            .then(data => {
-                setSettings(data);
-                setIsLoading(false);
-            });
-    }, []);
+        fetchSettings();
+    }, [fetchSettings]);
+
+    const handleInputChange = (event) => {
+        const { name, value } = event.target;
+        setSettings(prev => ({ ...prev, [name]: value }));
+    };
 
     const handleToggleChange = (event) => {
         const { name, checked } = event.target;
@@ -33,7 +42,7 @@ function SettingsPage() {
         const promise = apiClient.put(`/api/restaurants/${user.restaurantId}`, settings);
         toast.promise(promise, {
             loading: 'Saving settings...',
-            success: 'Settings updated!',
+            success: 'Settings updated successfully!',
             error: 'Failed to save settings.'
         });
     };
@@ -41,35 +50,25 @@ function SettingsPage() {
     if (isLoading) return <p>Loading settings...</p>;
 
     return (
-        <div>
-            <h2>Restaurant Settings</h2>
-            {/* Form for name, address, email... */}
+        <Paper sx={{ p: 3 }}>
+            <Typography variant="h5" gutterBottom>Restaurant Settings</Typography>
+            <TextField label="Restaurant Name" name="name" value={settings.name} onChange={handleInputChange} fullWidth margin="normal" />
+            <TextField label="Address" name="address" value={settings.address} onChange={handleInputChange} fullWidth margin="normal" />
+            <TextField label="Contact Email for Notifications" name="email" type="email" value={settings.email} onChange={handleInputChange} fullWidth margin="normal" />
             
-            <h3>Feature Management</h3>
+            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Feature Management</Typography>
             <FormControlLabel
-                control={
-                    <Switch
-                        checked={settings.reservationsEnabled}
-                        onChange={handleToggleChange}
-                        name="reservationsEnabled"
-                    />
-                }
+                control={<Switch checked={settings.reservationsEnabled} onChange={handleToggleChange} name="reservationsEnabled" />}
                 label="Enable Online Table Reservations"
             />
             <br />
             <FormControlLabel
-                control={
-                    <Switch
-                        checked={settings.qrCodeOrderingEnabled}
-                        onChange={handleToggleChange}
-                        name="qrCodeOrderingEnabled"
-                    />
-                }
+                control={<Switch checked={settings.qrCodeOrderingEnabled} onChange={handleToggleChange} name="qrCodeOrderingEnabled" />}
                 label="Enable QR Code Ordering"
             />
             <br />
-            <button onClick={handleSave}>Save Settings</button>
-        </div>
+            <Button variant="contained" onClick={handleSave} sx={{ mt: 3 }}>Save Settings</Button>
+        </Paper>
     );
 }
 

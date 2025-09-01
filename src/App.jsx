@@ -4,6 +4,7 @@ import LoginPage from './components/LoginPage';
 import OrderDashboard from './components/OrderDashboard';
 import MenuManagement from './components/MenuManagement';
 import ReservationManagement from './components/ReservationManagement';
+import SettingsPage from './components/SettingsPage';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
             <button onClick={() => setView('orders')} style={{ marginRight: '10px' }}>Live Orders</button>
             <button onClick={() => setView('menu')} style={{ marginRight: '10px' }}>Menu Management</button>
             <button onClick={() => setView('reservations')} style={{ marginRight: '10px' }}>Reservations</button>
+            <button onClick={() => setView('settings')}>Settings</button>
             <button onClick={logout}>Logout</button>
         </div>
       </nav>
@@ -44,6 +46,7 @@ function App() {
         {view === 'orders' && <OrderDashboard />}
         {view === 'menu' && <MenuManagement />}
         {view === 'reservations' && <ReservationManagement />}
+        {view === 'settings' && <SettingsPage />}
       </main>
     </div>
   );
