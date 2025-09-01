@@ -80,7 +80,11 @@ function OrderDashboard() {
             {filteredOrders.length > 0 ? (
                 filteredOrders.map(order => (
                     <div key={order.id} style={{ border: '1px solid #ccc', margin: '10px 0', padding: '10px', borderRadius: '8px' }}>
-                        <h4>Order #{order.id} - Status: {order.status}</h4>
+                        <h4>
+                            Order #{order.id}
+                            {order.tableNumber && ` - For Table #${order.tableNumber}`}
+                        </h4>
+                        <p><strong>Status: {order.status}</strong></p>
                         <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
                             {order.items && order.items.map(item => (
                                 <li key={item.menuItemId}>
