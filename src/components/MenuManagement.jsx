@@ -2,6 +2,23 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
+// Helper function to render categories and subcategories in the dropdown
+const renderCategoryOptions = (categories, level = 0) => {
+    let options = [];
+    for (const category of categories) {
+        options.push(
+            <option key={category.id} value={category.id}>
+                {'\u00A0'.repeat(level * 4)} {/* Indent with spaces */}
+                {category.name}
+            </option>
+        );
+        if (category.subCategories && category.subCategories.length > 0) {
+            options = options.concat(renderCategoryOptions(category.subCategories, level + 1));
+        }
+    }
+    return options;
+};
+
 function MenuManagement() {
     const { user } = useAuth();
     const [menuItems, setMenuItems] = useState([]);
@@ -111,9 +128,7 @@ function MenuManagement() {
                 <h3>{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</h3>
                 <select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required>
                     <option value="">-- Select a Category --</option>
-                    {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
+                        {renderCategoryOptions(categories)}
                 </select>
                 <br/>
                 <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Item Name" required /><br/>
