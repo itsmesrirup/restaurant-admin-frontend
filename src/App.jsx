@@ -7,6 +7,7 @@ import ReservationManagement from './components/ReservationManagement';
 import SettingsPage from './components/SettingsPage';
 import { Toaster } from 'react-hot-toast';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
+import CategoryManagement from './components/CategoryManagement';
 
 function App() {
   const { token, user, isLoading, logout } = useAuth(); // Get isLoading state
@@ -43,6 +44,7 @@ function App() {
             {!isSuperAdmin && <button onClick={() => setView('menu')}>Menu Management</button>}
             {!isSuperAdmin && <button onClick={() => setView('reservations')}>Reservations</button>}
             {!isSuperAdmin && <button onClick={() => setView('settings')}>Settings</button>}
+            {!isSuperAdmin && <button onClick={() => setView('category')}>Category Management</button>}
             
             {/* Super Admin Button */}
             {isSuperAdmin && <button onClick={() => setView('super')}>Admin Panel</button>}
@@ -56,6 +58,7 @@ function App() {
         {!isSuperAdmin && view === 'menu' && <MenuManagement />}
         {!isSuperAdmin && view === 'reservations' && <ReservationManagement />}
         {!isSuperAdmin && view === 'settings' && <SettingsPage />}
+        {!isSuperAdmin && view === 'category' && <CategoryManagement />}
 
         {/* Super Admin View */}
         {isSuperAdmin && <SuperAdminDashboard />}
