@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import { Switch, FormControlLabel } from '@mui/material'; // Import MUI components for the toggle
 
 // Helper function to render categories and subcategories in the dropdown
 const renderCategoryOptions = (categories, level = 0) => {
@@ -116,6 +117,20 @@ function MenuManagement() {
             error: (err) => `Error: ${err.message}`
         });
     };
+
+    // FUNCTION to handle the toggle
+    const handleAvailabilityToggle = async (itemId, currentStatus) => {
+        const promise = apiClient.patch(`/api/menu-items/${itemId}/availability`, { isAvailable: !currentStatus });
+        
+        toast.promise(promise, {
+            loading: 'Updating availability...',
+            success: () => {
+                fetchAllData(); // Refresh the list to show the new status
+                return 'Availability updated!';
+            },
+            error: (err) => err.message
+        });
+    };
     
     if (!user || isFetching) {
         return <p>Loading menu...</p>;
@@ -147,6 +162,17 @@ function MenuManagement() {
                         <p>{item.description || 'No description'}</p>
                         <button onClick={() => handleEdit(item)}>Edit</button>
                         <button onClick={() => handleDelete(item.id)}>Delete</button>
+                        {/* Availability Toggle Switch */}
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={item.isAvailable}
+                                    onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)}
+                                    color="success"
+                                />
+                            }
+                            label={item.isAvailable ? "Available" : "Out of Stock"}
+                        />
                     </div>
                 ))
             ) : (
