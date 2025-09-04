@@ -120,7 +120,7 @@ function MenuManagement() {
 
     // FUNCTION to handle the toggle
     const handleAvailabilityToggle = async (itemId, currentStatus) => {
-        const promise = apiClient.patch(`/api/menu-items/${itemId}/availability`, { isAvailable: !currentStatus });
+        const promise = apiClient.patch(`/api/menu-items/${itemId}/availability`, { available: !currentStatus });
         
         toast.promise(promise, {
             loading: 'Updating availability...',
