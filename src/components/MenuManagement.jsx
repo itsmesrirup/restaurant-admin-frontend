@@ -5,27 +5,33 @@ import { toast } from 'react-hot-toast';
 function MenuManagement() {
     const { user } = useAuth();
     const [menuItems, setMenuItems] = useState([]);
-    const [formData, setFormData] = useState({ name: '', price: '', description: '' });
+    const [categories, setCategories] = useState([]);
+    const [formData, setFormData] = useState({ name: '', price: '', description: '', categoryId: '' });
     const [editingId, setEditingId] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
 
-    const fetchMenuItems = useCallback(async () => {
+    const fetchAllData = useCallback(async () => {
         if (!user) return;
         setIsFetching(true);
         try {
-            const data = await apiClient.get(`/api/restaurants/${user.restaurantId}/menu`);
-            setMenuItems(data);
+            const [menuData, categoryData] = await Promise.all([
+                // ✅ CORRECT ENDPOINT
+                apiClient.get(`/api/menu-items/by-restaurant`),
+                apiClient.get('/api/categories/by-restaurant')
+            ]);
+            setMenuItems(menuData);
+            setCategories(categoryData);
         } catch (error) {
-            toast.error("Failed to load your menu.");
+            toast.error("Failed to load menu data.");
         } finally {
             setIsFetching(false);
         }
     }, [user]);
 
     useEffect(() => {
-        fetchMenuItems();
-    }, [fetchMenuItems]);
+        fetchAllData();
+    }, [fetchAllData]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -33,25 +39,35 @@ function MenuManagement() {
     };
 
     const resetForm = () => {
-        setFormData({ name: '', price: '', description: '' });
+        setFormData({ name: '', price: '', description: '', categoryId: '' });
         setEditingId(null);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.categoryId) {
+            toast.error("Please select a category for the item.");
+            return;
+        }
         setIsSubmitting(true);
         
-        const payload = { ...formData, restaurantId: user.restaurantId };
+        const payload = { 
+            name: formData.name,
+            price: parseFloat(formData.price), // Ensure price is a number
+            description: formData.description,
+            restaurantId: user.restaurantId,
+            categoryId: parseInt(formData.categoryId)
+        };
         
         const promise = editingId 
-            ? apiClient.put(`/api/menu-items/${editingId}`, payload) // ✅ Use apiClient
-            : apiClient.post('/api/menu-items', payload); // ✅ Use apiClient
+            ? apiClient.put(`/api/menu-items/${editingId}`, payload)
+            : apiClient.post('/api/menu-items', payload);
 
         toast.promise(promise, {
             loading: editingId ? 'Updating item...' : 'Adding item...',
             success: () => {
                 resetForm();
-                fetchMenuItems();
+                fetchAllData(); // Refresh all data
                 return editingId ? 'Item updated!' : 'Item added!';
             },
             error: (err) => `Error: ${err.message}`
@@ -60,18 +76,24 @@ function MenuManagement() {
 
     const handleEdit = (item) => {
         setEditingId(item.id);
-        setFormData({ name: item.name, price: item.price, description: item.description || '' });
+        setFormData({ 
+            name: item.name, 
+            price: item.price, 
+            description: item.description || '', 
+            // The categoryId from the response will now be available
+            categoryId: item.categoryId ? String(item.categoryId) : '' 
+        });
     };
     
     const handleDelete = async (itemId) => {
-        if (!window.confirm("Are you sure?")) return;
+        if (!window.confirm("Are you sure you want to delete this item?")) return;
         
-        const promise = apiClient.delete(`/api/menu-items/${itemId}`); // ✅ Use apiClient
+        const promise = apiClient.delete(`/api/menu-items/${itemId}`);
         
         toast.promise(promise, {
             loading: 'Deleting item...',
             success: () => {
-                fetchMenuItems();
+                fetchAllData(); // ✅ CORRECT FUNCTION
                 return 'Item deleted!';
             },
             error: (err) => `Error: ${err.message}`
@@ -83,11 +105,17 @@ function MenuManagement() {
     }
 
     return (
-        // ... The rest of the JSX is the same and correct
         <div>
             <h2>Menu Management for {user.restaurantName}</h2>
             <form onSubmit={handleSubmit} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem', borderRadius: '8px' }}>
-                <h3>{editingId ? `Editing "${formData.name}"` : 'Add New Menu Item'}</h3>
+                <h3>{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</h3>
+                <select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required>
+                    <option value="">-- Select a Category --</option>
+                    {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                </select>
+                <br/>
                 <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Item Name" required /><br/>
                 <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Price" step="0.01" required /><br/>
                 <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Description (optional)"></textarea><br/>
@@ -96,11 +124,12 @@ function MenuManagement() {
                 </button>
                 {editingId && <button type="button" onClick={resetForm} disabled={isSubmitting}>Cancel</button>}
             </form>
+            <h3>Existing Menu Items</h3>
             {menuItems.length > 0 ? (
                 menuItems.map(item => (
                     <div key={item.id} style={{ borderBottom: '1px solid #eee', padding: '1rem 0.5rem' }}>
-                        <strong>{item.name || 'No Name'}</strong> - ${item.price ? item.price.toFixed(2) : '0.00'}
-                        <p style={{ margin: '0.5rem 0' }}>{item.description || 'No description available.'}</p>
+                        <strong>{item.name}</strong> ({item.categoryName || 'Uncategorized'}) - ${item.price ? item.price.toFixed(2) : '0.00'}
+                        <p>{item.description || 'No description'}</p>
                         <button onClick={() => handleEdit(item)}>Edit</button>
                         <button onClick={() => handleDelete(item.id)}>Delete</button>
                     </div>
