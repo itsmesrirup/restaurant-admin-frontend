@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Switch, FormControlLabel, TextField, Button, Paper, Typography } from '@mui/material';
+import { TextField, Button, Paper, Typography, Switch, FormControlLabel } from '@mui/material';
 
 function SettingsPage() {
     const { user } = useAuth();
     // Initialize with fallback values to prevent errors
     const [settings, setSettings] = useState({
         name: '', address: '', email: '',
-        reservationsEnabled: false, qrCodeOrderingEnabled: false
+        reservationsEnabled: false, qrCodeOrderingEnabled: false,
+        themePrimaryColor: '', themeSecondaryColor: '', logoUrl: ''
     });
     const [isLoading, setIsLoading] = useState(true);
 
@@ -55,6 +56,36 @@ function SettingsPage() {
             <TextField label="Restaurant Name" name="name" value={settings.name} onChange={handleInputChange} fullWidth margin="normal" />
             <TextField label="Address" name="address" value={settings.address} onChange={handleInputChange} fullWidth margin="normal" />
             <TextField label="Contact Email for Notifications" name="email" type="email" value={settings.email} onChange={handleInputChange} fullWidth margin="normal" />
+            
+            {/* Branding & Theme Section */}
+            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Branding & Theme</Typography>
+            <TextField 
+                label="Primary Color (Hex Code)" 
+                name="themePrimaryColor" 
+                value={settings.themePrimaryColor || ''} 
+                onChange={handleInputChange} 
+                fullWidth 
+                margin="normal"
+                helperText="e.g., #222222"
+            />
+            <TextField 
+                label="Secondary/Accent Color (Hex Code)" 
+                name="themeSecondaryColor" 
+                value={settings.themeSecondaryColor || ''} 
+                onChange={handleInputChange} 
+                fullWidth 
+                margin="normal"
+                helperText="e.g., #D4AF37"
+            />
+            <TextField 
+                label="Logo Image URL" 
+                name="logoUrl" 
+                value={settings.logoUrl || ''} 
+                onChange={handleInputChange} 
+                fullWidth 
+                margin="normal"
+                helperText="A direct link to your logo image (e.g., from your website)"
+            />
             
             <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Feature Management</Typography>
             <FormControlLabel
