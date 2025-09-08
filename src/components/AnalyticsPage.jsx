@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Paper, Typography, Grid, Box } from '@mui/material';
+import { Paper, Typography, Grid, Box, CircularProgress } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const StatCard = ({ title, value, prefix = '' }) => (
-    <Paper elevation={3} sx={{ p: 2, textAlign: 'center' }}>
-        <Typography color="text.secondary">{title}</Typography>
+    <Paper elevation={3} sx={{ p: 2, textAlign: 'center', height: '100%' }}>
+        <Typography color="text.secondary" noWrap>{title}</Typography>
         <Typography variant="h4" fontWeight="bold">{prefix}{value}</Typography>
     </Paper>
 );
@@ -27,7 +27,6 @@ function AnalyticsPage() {
                     apiClient.get('/api/analytics/top-selling-items')
                 ]);
                 setSummary(summaryData);
-                // Get only the top 5 items for the chart
                 setTopItems(topItemsData.slice(0, 5));
             } catch (error) {
                 toast.error("Failed to load analytics data.");
@@ -42,18 +41,19 @@ function AnalyticsPage() {
     if (!summary) return <p>No data available to generate analytics.</p>;
 
     return (
-        <div>
+        // Use a Box with flexbox for the main layout of this page
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Typography variant="h4" gutterBottom>Analytics for {user.restaurantName}</Typography>
             
             {/* Summary Cards */}
-            <Grid container spacing={2} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6} md={4}> {/* ✅ Adjusted grid sizes for better fit */}
+            <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
                     <StatCard title="Total Revenue" value={summary.totalRevenue.toFixed(2)} prefix="$" />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid item xs={12} sm={4}>
                     <StatCard title="Total Orders" value={summary.totalOrders} />
                 </Grid>
-                <Grid item xs={12} sm={12} md={4}> {/* Make avg value full width on small screens */}
+                <Grid item xs={12} sm={4}>
                     <StatCard title="Average Order Value" value={summary.averageOrderValue.toFixed(2)} prefix="$" />
                 </Grid>
             </Grid>
@@ -65,10 +65,11 @@ function AnalyticsPage() {
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                             data={topItems}
-                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                            margin={{ top: 5, right: 20, left: -10, bottom: 20 }} // Adjust margins for better fit
                         >
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="itemName" />
+                            {/* Angle the labels on the X-axis to save space */}
+                            <XAxis dataKey="itemName" interval={0} angle={-30} textAnchor="end" height={60} />
                             <YAxis />
                             <Tooltip />
                             <Legend />
@@ -77,8 +78,8 @@ function AnalyticsPage() {
                     </ResponsiveContainer>
                 </Box>
             </Paper>
-        </div>
+        </Box>
     );
 }
 
-export default AnalyticsPage;
+export default StatCard;
