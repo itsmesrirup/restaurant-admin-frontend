@@ -10,10 +10,11 @@ import CategoryManagement from './components/CategoryManagement';
 import AnalyticsPage from './components/AnalyticsPage';
 import { Toaster } from 'react-hot-toast';
 
-// MUI components for the new layout
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, Divider, Button } from '@mui/material';
+// MUI components for the new responsive layout
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, Divider, Button, AppBar, Toolbar, IconButton, useTheme, useMediaQuery } from '@mui/material';
 
-// MUI Icons for the sidebar
+// MUI Icons
+import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import EventSeatIcon from '@mui/icons-material/EventSeat';
@@ -28,6 +29,9 @@ const drawerWidth = 240;
 function App() {
     const { token, user, isLoading, logout } = useAuth();
     const [view, setView] = useState(user?.role === 'SUPER_ADMIN' ? 'super' : 'orders');
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md')); // Check for medium screens and down
 
     if (isLoading) {
         return <div>Loading Application...</div>;
@@ -41,6 +45,10 @@ function App() {
             </>
         );
     }
+
+    const handleDrawerToggle = () => {
+        setMobileOpen(!mobileOpen);
+    };
 
     const isSuperAdmin = user && user.role === 'SUPER_ADMIN';
 
@@ -57,21 +65,23 @@ function App() {
         { text: 'Admin Panel', view: 'super', icon: <SupervisedUserCircleIcon /> },
     ];
 
+    const currentNavItems = isSuperAdmin ? superAdminNavItems : adminNavItems;
+    const currentViewTitle = currentNavItems.find(item => item.view === view)?.text;
+
     const drawerContent = (
         <div>
-            <Box sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>
-                    {isSuperAdmin ? 'Tablo' : user?.restaurantName}
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                    {isSuperAdmin ? 'Super Admin' : 'Restaurant Management'}
-                </Typography>
-            </Box>
+            <Toolbar sx={{ backgroundColor: '#222', display: 'flex', justifyContent: 'center' }}>
+                <Box sx={{ p: 1, textAlign: 'center' }}>
+                    <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>
+                        {isSuperAdmin ? 'Tablo' : user?.restaurantName}
+                    </Typography>
+                </Box>
+            </Toolbar>
             <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)' }} />
             <List>
-                {(isSuperAdmin ? superAdminNavItems : adminNavItems).map((item) => (
+                {currentNavItems.map((item) => (
                     <ListItem key={item.text} disablePadding>
-                        <ListItemButton selected={view === item.view} onClick={() => setView(item.view)}>
+                        <ListItemButton selected={view === item.view} onClick={() => { setView(item.view); if(isMobile) handleDrawerToggle(); }}>
                             <ListItemIcon sx={{ color: 'white' }}>{item.icon}</ListItemIcon>
                             <ListItemText primary={item.text} />
                         </ListItemButton>
@@ -79,7 +89,7 @@ function App() {
                 ))}
             </List>
             <Box sx={{ position: 'absolute', bottom: 0, width: '100%', p: 2 }}>
-                <Button onClick={logout} variant="contained" fullWidth startIcon={<LogoutIcon />}>
+                <Button onClick={logout} variant="contained" fullWidth startIcon={<LogoutIcon />} color="error">
                     Logout
                 </Button>
             </Box>
@@ -89,22 +99,64 @@ function App() {
     return (
         <Box sx={{ display: 'flex' }}>
             <Toaster position="top-center" />
-            <Drawer
-                variant="permanent"
+            <AppBar
+                position="fixed"
                 sx={{
-                    width: drawerWidth,
-                    flexShrink: 0,
-                    '& .MuiDrawer-paper': {
-                        width: drawerWidth,
-                        boxSizing: 'border-box',
-                        backgroundColor: '#333',
-                        color: 'white',
-                    },
+                    width: { md: `calc(100% - ${drawerWidth}px)` },
+                    ml: { md: `${drawerWidth}px` },
+                    display: { md: 'none' } // Only display the top bar on mobile
                 }}
             >
-                {drawerContent}
-            </Drawer>
-            <Box component="main" sx={{ flexGrow: 1, p: { xs: 1, sm: 2, md: 3 }, backgroundColor: '#f4f4f4', minHeight: '100vh', width: `calc(100vw - ${drawerWidth}px)` }}>
+                <Toolbar>
+                    <IconButton
+                        color="inherit"
+                        aria-label="open drawer"
+                        edge="start"
+                        onClick={handleDrawerToggle}
+                        sx={{ mr: 2 }}
+                    >
+                        <MenuIcon />
+                    </IconButton>
+                    <Typography variant="h6" noWrap component="div">
+                        {currentViewTitle}
+                    </Typography>
+                </Toolbar>
+            </AppBar>
+            <Box
+                component="nav"
+                sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+            >
+                {/* Temporary Drawer for Mobile */}
+                <Drawer
+                    variant="temporary"
+                    open={mobileOpen}
+                    onClose={handleDrawerToggle}
+                    ModalProps={{ keepMounted: true }}
+                    sx={{
+                        display: { xs: 'block', md: 'none' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, backgroundColor: '#333', color: 'white' },
+                    }}
+                >
+                    {drawerContent}
+                </Drawer>
+                {/* Permanent Drawer for Desktop */}
+                <Drawer
+                    variant="permanent"
+                    sx={{
+                        display: { xs: 'none', md: 'block' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, backgroundColor: '#333', color: 'white' },
+                    }}
+                    open
+                >
+                    {drawerContent}
+                </Drawer>
+            </Box>
+            <Box
+                component="main"
+                sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` } }}
+            >
+                <Toolbar sx={{ display: { md: 'none' } }} /> {/* Spacer for the top app bar */}
+                
                 {isSuperAdmin && <SuperAdminDashboard />}
                 {!isSuperAdmin && view === 'orders' && <OrderDashboard />}
                 {!isSuperAdmin && view === 'menu' && <MenuManagement />}
