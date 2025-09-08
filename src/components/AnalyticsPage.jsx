@@ -46,22 +46,22 @@ function AnalyticsPage() {
             <h2>Analytics for {user.restaurantName}</h2>
             
             {/* Summary Cards */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={4}>
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={6} md={4}> {/* ✅ Adjusted grid sizes for better fit */}
                     <StatCard title="Total Revenue" value={summary.totalRevenue.toFixed(2)} prefix="$" />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={6} md={4}>
                     <StatCard title="Total Orders" value={summary.totalOrders} />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={12} md={4}> {/* Make avg value full width on small screens */}
                     <StatCard title="Average Order Value" value={summary.averageOrderValue.toFixed(2)} prefix="$" />
                 </Grid>
             </Grid>
 
             {/* Top Selling Items Chart */}
-            <Paper elevation={3} sx={{ p: 2 }}>
+            <Paper elevation={3} sx={{ p: 2, width: '100%', overflowX: 'auto' }}>
                 <Typography variant="h6" gutterBottom>Top 5 Selling Items</Typography>
-                <Box sx={{ height: 400 }}>
+                <Box sx={{ height: 400, minWidth: '500px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                             data={topItems}
