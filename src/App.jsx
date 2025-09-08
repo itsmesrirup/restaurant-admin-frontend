@@ -104,7 +104,7 @@ function App() {
             >
                 {drawerContent}
             </Drawer>
-            <Box component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: '#f4f4f4', minHeight: '100vh' }}>
+            <Box component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: '#f4f4f4', minHeight: '100vh', minWidth: 0 }}>
                 {isSuperAdmin && <SuperAdminDashboard />}
                 {!isSuperAdmin && view === 'orders' && <OrderDashboard />}
                 {!isSuperAdmin && view === 'menu' && <MenuManagement />}
