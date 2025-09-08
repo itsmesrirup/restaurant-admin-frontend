@@ -41,11 +41,9 @@ function AnalyticsPage() {
     if (!summary) return <p>No data available to generate analytics.</p>;
 
     return (
-        // Use a Box with flexbox for the main layout of this page
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Typography variant="h4" gutterBottom>Analytics for {user.restaurantName}</Typography>
             
-            {/* Summary Cards */}
             <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
                     <StatCard title="Total Revenue" value={summary.totalRevenue.toFixed(2)} prefix="$" />
@@ -58,17 +56,15 @@ function AnalyticsPage() {
                 </Grid>
             </Grid>
 
-            {/* Top Selling Items Chart */}
             <Paper elevation={3} sx={{ p: 2, width: '100%', overflowX: 'auto' }}>
                 <Typography variant="h6" gutterBottom>Top 5 Selling Items</Typography>
                 <Box sx={{ height: 400, minWidth: '500px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                             data={topItems}
-                            margin={{ top: 5, right: 20, left: -10, bottom: 20 }} // Adjust margins for better fit
+                            margin={{ top: 5, right: 20, left: -10, bottom: 20 }}
                         >
                             <CartesianGrid strokeDasharray="3 3" />
-                            {/* Angle the labels on the X-axis to save space */}
                             <XAxis dataKey="itemName" interval={0} angle={-30} textAnchor="end" height={60} />
                             <YAxis />
                             <Tooltip />
@@ -82,4 +78,4 @@ function AnalyticsPage() {
     );
 }
 
-export default StatCard;
+export default AnalyticsPage;
