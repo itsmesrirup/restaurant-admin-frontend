@@ -43,7 +43,7 @@ function AnalyticsPage() {
 
     return (
         <div>
-            <h2>Analytics for {user.restaurantName}</h2>
+            <Typography variant="h4" gutterBottom>Analytics for {user.restaurantName}</Typography>
             
             {/* Summary Cards */}
             <Grid container spacing={2} sx={{ mb: 4 }}>

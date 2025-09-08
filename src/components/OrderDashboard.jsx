@@ -77,24 +77,22 @@ function OrderDashboard() {
                 // ✅ Use a Grid container for better responsive layout of order cards
                 <Grid container spacing={2}>
                     {filteredOrders.map(order => (
-                        <Grid item xs={12} sm={6} lg={4} key={order.id}>
+                        <Grid item xs={12} sm={6} md={4} key={order.id}>
                             {/* ✅ Use a Paper component for the card */}
-                            <Paper elevation={3} sx={{ p: 2, borderRadius: 2, height: '100%' }}>
-                                <Typography variant="h6">
-                                    Order #{order.id}
-                                    {order.tableNumber && ` - For Table #${order.tableNumber}`}
-                                </Typography>
-                                <Typography variant="body1" sx={{ mt: 1 }}><strong>Status: {order.status}</strong></Typography>
-                                
-                                <Box component="ul" sx={{ listStyle: 'none', p: 0, mt: 1 }}>
-                                    {order.items && order.items.map(item => (
-                                        <li key={item.menuItemId}>
-                                            {item.quantity} x {item.name}
-                                        </li>
-                                    ))}
+                            <Paper elevation={3} sx={{ p: 2, borderRadius: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                <Box sx={{ flexGrow: 1 }}>
+                                    <Typography variant="h6">Order #{order.id}</Typography>
+                                        {order.tableNumber && <Typography variant="h6" color="secondary">For Table #{order.tableNumber}</Typography>}
+                                    <Typography variant="body1" sx={{ mt: 1 }}><strong>Status: {order.status}</strong></Typography>
+                                    
+                                    <Box component="ul" sx={{ listStyle: 'none', p: 0, mt: 1 }}>
+                                        {order.items?.map(item => (
+                                            <li key={item.menuItemId}>{item.quantity} x {item.name}</li>
+                                        ))}
+                                    </Box>
+                                    
+                                    <Typography variant="h6" sx={{ mt: 1 }}><strong>Total: ${order.totalPrice?.toFixed(2)}</strong></Typography>
                                 </Box>
-                                
-                                <Typography variant="h6" sx={{ mt: 1 }}><strong>Total: ${order.totalPrice ? order.totalPrice.toFixed(2) : '0.00'}</strong></Typography>
                                 
                                 <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                     <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'CONFIRMED')}>Confirm</Button>
