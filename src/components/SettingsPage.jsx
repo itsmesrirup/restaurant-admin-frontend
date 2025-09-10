@@ -116,6 +116,10 @@ function SettingsPage() {
                     control={<Switch checked={settings.qrCodeOrderingEnabled} onChange={handleToggleChange} name="qrCodeOrderingEnabled" />}
                     label="Enable QR Code Ordering"
                 />
+                <FormControlLabel
+                    control={<Switch checked={settings.recommendationsEnabled} onChange={handleToggleChange} name="recommendationsEnabled" />}
+                    label="Enable AI-Powered Recommendations"
+                />
             </Box>
             
             <Box sx={{ mt: 3, position: 'relative' }}>
