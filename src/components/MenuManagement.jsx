@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Switch, FormControlLabel } from '@mui/material'; // Import MUI components for the toggle
+import { Switch, FormControlLabel,Checkbox } from '@mui/material'; // Import MUI components for the toggle
+import MenuItemOptionsModal from './MenuItemOptionsModal';
 
 // Helper function to render categories and subcategories in the dropdown
 const renderCategoryOptions = (categories, level = 0) => {
@@ -24,10 +25,14 @@ function MenuManagement() {
     const { user } = useAuth();
     const [menuItems, setMenuItems] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [formData, setFormData] = useState({ name: '', price: '', description: '', categoryId: '' });
+    const [formData, setFormData] = useState({ name: '', price: '', description: '', categoryId: '', isBundle: false });
     const [editingId, setEditingId] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
+
+    // State for the options modal
+    const [optionsModalOpen, setOptionsModalOpen] = useState(false);
+    const [currentItemForOptions, setCurrentItemForOptions] = useState(null);
 
     const fetchAllData = useCallback(async () => {
         if (!user) return;
@@ -52,12 +57,14 @@ function MenuManagement() {
     }, [fetchAllData]);
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        // Handle checkbox for isBundle
+        const val = type === 'checkbox' ? checked : value;
+        setFormData(prev => ({ ...prev, [name]: val }));
     };
 
     const resetForm = () => {
-        setFormData({ name: '', price: '', description: '', categoryId: '' });
+        setFormData({ name: '', price: '', description: '', categoryId: '', isBundle: false });
         setEditingId(null);
     };
 
@@ -74,7 +81,8 @@ function MenuManagement() {
             price: parseFloat(formData.price), // Ensure price is a number
             description: formData.description,
             restaurantId: user.restaurantId,
-            categoryId: parseInt(formData.categoryId)
+            categoryId: parseInt(formData.categoryId),
+            isBundle: formData.isBundle // Send the bundle flag
         };
         
         const promise = editingId 
@@ -99,7 +107,8 @@ function MenuManagement() {
             price: item.price, 
             description: item.description || '', 
             // The categoryId from the response will now be available
-            categoryId: item.categoryId ? String(item.categoryId) : '' 
+            categoryId: item.categoryId ? String(item.categoryId) : '',
+            isBundle: item.isBundle || false // Set the bundle flag
         });
     };
     
@@ -131,6 +140,11 @@ function MenuManagement() {
             error: (err) => err.message
         });
     };
+
+    const openOptionsManager = (item) => {
+        setCurrentItemForOptions(item);
+        setOptionsModalOpen(true);
+    };
     
     if (!user || isFetching) {
         return <p>Loading menu...</p>;
@@ -149,6 +163,14 @@ function MenuManagement() {
                 <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Item Name" required /><br/>
                 <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Price" step="0.01" required /><br/>
                 <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Description (optional)"></textarea><br/>
+                
+                {/* Checkbox to mark an item as a bundle */}
+                <FormControlLabel
+                    control={<Checkbox checked={formData.isBundle} onChange={handleInputChange} name="isBundle" />}
+                    label="This is a 'Formule' / Bundle Item (with choices)"
+                />
+                <br/>
+                
                 <button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? 'Saving...' : (editingId ? 'Update Item' : 'Add Item')}
                 </button>
@@ -162,6 +184,12 @@ function MenuManagement() {
                         <p>{item.description || 'No description'}</p>
                         <button onClick={() => handleEdit(item)}>Edit</button>
                         <button onClick={() => handleDelete(item.id)}>Delete</button>
+                        
+                        {/* Button to open the options manager for bundle items */}
+                        {item.isBundle && (
+                            <button type="button" onClick={() => openOptionsManager(item)}>Manage Choices</button>
+                        )}
+
                         {/* Availability Toggle Switch */}
                         <FormControlLabel
                             control={
@@ -178,6 +206,14 @@ function MenuManagement() {
             ) : (
                 <p>No menu items found. Add one using the form above to get started!</p>
             )}
+
+            {/* Render the modal */}
+            <MenuItemOptionsModal 
+                open={optionsModalOpen}
+                handleClose={() => setOptionsModalOpen(false)}
+                menuItem={currentItemForOptions}
+                onUpdate={fetchAllData} // Refresh the main list when options change
+            />
         </div>
     );
 }
