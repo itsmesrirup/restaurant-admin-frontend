@@ -72,8 +72,29 @@ function App() {
         <div>
             <Toolbar sx={{ backgroundColor: '#222', display: 'flex', justifyContent: 'center' }}>
                 <Box sx={{ p: 1, textAlign: 'center' }}>
-                    <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>
-                        {isSuperAdmin ? 'Tablo' : user?.restaurantName}
+                    
+                    {/* Show logo if it exists, otherwise show name */}
+                    {user?.logoUrl ? (
+                        <Box
+                            component="img"
+                            src={user.logoUrl}
+                            alt={`${user.restaurantName} logo`}
+                            sx={{
+                                maxHeight: 60,
+                                maxWidth: '100%',
+                                p: 1,
+                                backgroundColor: 'white', // Add a white background for visibility
+                                borderRadius: 2
+                            }}
+                        />
+                    ) : (
+                        <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>
+                            {isSuperAdmin ? 'Tablo' : user?.restaurantName}
+                        </Typography>
+                    )}
+
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'block', mt: 1 }}>
+                        {isSuperAdmin ? 'Super Admin' : 'Restaurant Management'}
                     </Typography>
                 </Box>
             </Toolbar>
