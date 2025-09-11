@@ -82,7 +82,7 @@ function MenuManagement() {
             description: formData.description,
             restaurantId: user.restaurantId,
             categoryId: parseInt(formData.categoryId),
-            isBundle: formData.isBundle // Send the bundle flag
+            bundle: formData.isBundle // Send the bundle flag
         };
         
         const promise = editingId 
