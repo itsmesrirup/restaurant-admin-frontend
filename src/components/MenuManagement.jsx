@@ -120,20 +120,22 @@ function MenuManagement() {
     return (
         <Box>
             <Typography variant="h4" gutterBottom>Menu Management for {user.restaurantName}</Typography>
+            
+            {/* ✅ NEW: Form using MUI Grid for a clean, responsive layout */}
             <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 3 }}>
                 <Typography variant="h6">{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</Typography>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
                     <Grid item xs={12} sm={6}>
-                        <TextField select label="Category" name="categoryId" value={formData.categoryId} onChange={handleInputChange} required fullWidth>
+                        <TextField select label="Category *" name="categoryId" value={formData.categoryId} onChange={handleInputChange} required fullWidth>
                             <MenuItem value="">-- Select a Category --</MenuItem>
                             {renderCategoryOptions(categories)}
                         </TextField>
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                        <TextField label="Item Name" name="name" value={formData.name} onChange={handleInputChange} required fullWidth />
+                        <TextField label="Item Name *" name="name" value={formData.name} onChange={handleInputChange} required fullWidth />
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                        <TextField label="Price" name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth InputProps={{ inputProps: { step: "0.01" } }} />
+                        <TextField label="Price *" name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth InputProps={{ inputProps: { step: "0.01" } }} />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <TextField label="Description (optional)" name="description" value={formData.description} onChange={handleInputChange} fullWidth multiline rows={2} />
@@ -155,10 +157,7 @@ function MenuManagement() {
             {menuItems.map(item => (
                 <Paper key={item.id} sx={{ p: 2, my: 1, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="body1">
-                            <strong>{item.name}</strong> 
-                            {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule/Bundle)</span>}
-                        </Typography>
+                        <Typography variant="body1"><strong>{item.name}</strong> {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule/Bundle)</span>}</Typography>
                         <Typography variant="caption" color="text.secondary">{item.categoryName || 'Uncategorized'} - ${item.price?.toFixed(2)}</Typography>
                     </Box>
                     <FormControlLabel control={<Switch checked={item.isAvailable} onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)}/>} label={item.isAvailable ? "Available" : "Out of Stock"} />

@@ -26,30 +26,38 @@ function MenuItemOptionsModal({ open, handleClose, menuItem, onUpdate }) {
     const [options, setOptions] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        if (menuItem) {
-            // A menuItem passed as a prop might not have the latest 'options' data
-            // So we re-fetch it to be sure.
-            setIsLoading(true);
-            apiClient.get(`/api/menu-items/${menuItem.id}`)
-                .then(data => setOptions(data.options || []))
-                .catch(() => toast.error("Could not load options."))
-                .finally(() => setIsLoading(false));
+    // THIS IS THE KEY FIX: Re-fetch data whenever the modal opens for a specific item.
+    const fetchOptions = useCallback(async () => {
+        if (!menuItem) return;
+        setIsLoading(true);
+        try {
+            const data = await apiClient.get(`/api/menu-items/${menuItem.id}`);
+            setOptions(data.options || []);
+        } catch (error) {
+            toast.error("Could not load options.");
+        } finally {
+            setIsLoading(false);
         }
     }, [menuItem]);
+    
+    useEffect(() => {
+        if (open) {
+            fetchOptions();
+        }
+    }, [open, fetchOptions]);
 
     const handleAddOptionGroup = () => {
         const newOption = { name: 'New Choice Group', minChoices: 1, maxChoices: 1 };
         toast.promise(
             apiClient.post(`/api/menu-items/${menuItem.id}/options`, newOption),
             {
-                loading: 'Adding choice group...',
-                success: (savedOption) => {
-                    setOptions(prev => [...prev, savedOption]);
+                loading: 'Adding...',
+                success: () => {
+                    fetchOptions(); // Re-fetch to get the new group with its ID
                     onUpdate();
-                    return "Choice group added!";
+                    return "Group added!";
                 },
-                error: "Failed to add choice group."
+                error: "Failed to add group."
             }
         );
     };
