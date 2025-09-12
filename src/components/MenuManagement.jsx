@@ -180,7 +180,7 @@ function MenuManagement() {
             <Typography variant="h4" gutterBottom>Menu Management for {user.restaurantName}</Typography>
             <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 3 }}>
                 <Typography variant="h6" sx={{ mb: 2 }}>{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</Typography>
-                <Grid container spacing={2} alignItems="center"> {/* Use alignItems="center" for better vertical alignment */}
+                <Grid container spacing={2} alignItems="flex-start"> 
                     
                     {/* --- Row 1 --- */}
                     <Grid item xs={12} sm={6} md={4}>
@@ -200,17 +200,17 @@ function MenuManagement() {
                         </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
-                        <TextField label="Item Name *" name="name" value={formData.name} onChange={handleInputChange} required fullWidth />
+                        <TextField label="Item Name " name="name" value={formData.name} onChange={handleInputChange} required fullWidth />
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
-                        <TextField label="Price *" name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth InputProps={{ inputProps: { step: "0.01" } }} />
+                        <TextField label="Price " name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth InputProps={{ inputProps: { step: "0.01" } }} />
                     </Grid>
 
                     {/* --- Row 2 --- */}
-                    <Grid item xs={12} md={8}>
+                    <Grid item xs={12} sm={8}>
                         <TextField label="Description (optional)" name="description" value={formData.description} onChange={handleInputChange} fullWidth multiline rows={3} />
                     </Grid>
-                    <Grid item xs={12} md={4} sx={{ alignSelf: 'stretch' }}> {/* Use stretch to align vertically */}
+                    <Grid item xs={12} sm={4} sx={{ display: 'flex', alignItems: 'center' }}> 
                         <FormControlLabel 
                             control={<Checkbox checked={formData.isBundle} onChange={handleInputChange} name="isBundle" />} 
                             label="This is a 'Formule' / Bundle Item"
