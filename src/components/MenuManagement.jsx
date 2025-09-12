@@ -1,23 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Switch, FormControlLabel, Checkbox } from '@mui/material'; // I've kept Checkbox here as you were using it
+import { Switch, FormControlLabel, Checkbox, Paper, Typography, Box, TextField, Button, Select, MenuItem, Grid } from '@mui/material';
 import MenuItemOptionsModal from './MenuItemOptionsModal';
 
-// Helper function to render categories and subcategories in the dropdown
+// Helper function to render categories in the MUI Select component
 const renderCategoryOptions = (categories, level = 0) => {
     let options = [];
-    for (const category of categories) {
+    categories.forEach(category => {
         options.push(
-            <option key={category.id} value={category.id}>
-                {'\u00A0'.repeat(level * 4)} {/* Indent with spaces */}
+            <MenuItem key={category.id} value={category.id} sx={{ pl: level * 2 }}>
                 {category.name}
-            </option>
+            </MenuItem>
         );
-        if (category.subCategories && category.subCategories.length > 0) {
+        if (category.subCategories?.length > 0) {
             options = options.concat(renderCategoryOptions(category.subCategories, level + 1));
         }
-    }
+    });
     return options;
 };
 
@@ -31,8 +30,6 @@ function MenuManagement() {
     const [editingId, setEditingId] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
-
-    // State for the options modal
     const [optionsModalOpen, setOptionsModalOpen] = useState(false);
     const [currentItemForOptions, setCurrentItemForOptions] = useState(null);
 
@@ -46,16 +43,11 @@ function MenuManagement() {
             ]);
             setMenuItems(menuData);
             setCategories(categoryData);
-        } catch (error) {
-            toast.error("Failed to load menu data.");
-        } finally {
-            setIsFetching(false);
-        }
+        } catch (error) { toast.error("Failed to load menu data."); }
+        finally { setIsFetching(false); }
     }, [user]);
 
-    useEffect(() => {
-        fetchAllData();
-    }, [fetchAllData]);
+    useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -70,74 +62,50 @@ function MenuManagement() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.categoryId) {
-            toast.error("Please select a category for the item.");
-            return;
-        }
+        if (!formData.categoryId) { return toast.error("Please select a category."); }
         setIsSubmitting(true);
-        
-        // ✅ THE MINIMAL FIX: Map the state 'isBundle' to the payload property 'bundle'
-        const payload = { 
+        const payload = {
             name: formData.name,
             price: parseFloat(formData.price),
             description: formData.description,
             restaurantId: user.restaurantId,
             categoryId: parseInt(formData.categoryId),
-            bundle: formData.isBundle // This is the key change
+            bundle: formData.isBundle // Correctly map 'isBundle' state to 'bundle' payload
         };
-        
-        const promise = editingId 
-            ? apiClient.put(`/api/menu-items/${editingId}`, payload)
-            : apiClient.post('/api/menu-items', payload);
-
+        const promise = editingId ? apiClient.put(`/api/menu-items/${editingId}`, payload) : apiClient.post('/api/menu-items', payload);
         toast.promise(promise, {
             loading: editingId ? 'Updating item...' : 'Adding item...',
-            success: () => {
-                resetForm();
-                fetchAllData();
-                return editingId ? 'Item updated!' : 'Item added!';
-            },
-            error: (err) => `Error: ${err.message}`
+            success: () => { resetForm(); fetchAllData(); return editingId ? 'Item updated!' : 'Item added!'; },
+            error: (err) => err.message
         }).finally(() => setIsSubmitting(false));
     };
 
     const handleEdit = (item) => {
         setEditingId(item.id);
-        setFormData({ 
-            name: item.name, 
-            price: item.price, 
-            description: item.description || '', 
+        setFormData({
+            name: item.name,
+            price: item.price,
+            description: item.description || '',
             categoryId: item.categoryId ? String(item.categoryId) : '',
-            // ✅ THE MINIMAL FIX: Read from 'item.bundle' which comes from the backend
-            isBundle: item.bundle || false 
-        });
-    };
-    
-    const handleDelete = async (itemId) => {
-        // Your original, more descriptive confirmation message
-        if (!window.confirm("Are you sure you want to delete this item?")) return;
-        
-        const promise = apiClient.delete(`/api/menu-items/${itemId}`);
-        
-        toast.promise(promise, {
-            loading: 'Deleting item...',
-            success: () => {
-                fetchAllData();
-                return 'Item deleted!';
-            },
-            error: (err) => `Error: ${err.message}`
+            isBundle: item.bundle || false // Read from 'item.bundle' from backend
         });
     };
 
-    const handleAvailabilityToggle = async (itemId, currentStatus) => {
-        const promise = apiClient.patch(`/api/menu-items/${itemId}/availability`, { available: !currentStatus });
-        
+    const handleDelete = (itemId) => {
+        if (!window.confirm("Are you sure?")) return;
+        const promise = apiClient.delete(`/api/menu-items/${itemId}`);
         toast.promise(promise, {
-            loading: 'Updating availability...',
-            success: () => {
-                fetchAllData();
-                return 'Availability updated!';
-            },
+            loading: 'Deleting...',
+            success: () => { fetchAllData(); return 'Item deleted!'; },
+            error: (err) => err.message
+        });
+    };
+    
+    const handleAvailabilityToggle = (itemId, currentStatus) => {
+        const promise = apiClient.patch(`/api/menu-items/${itemId}/availability`, { available: !currentStatus });
+        toast.promise(promise, {
+            loading: 'Updating...',
+            success: () => { fetchAllData(); return 'Availability updated!'; },
             error: (err) => err.message
         });
     };
@@ -146,71 +114,62 @@ function MenuManagement() {
         setCurrentItemForOptions(item);
         setOptionsModalOpen(true);
     };
-    
-    if (!user || isFetching) {
-        return <p>Loading menu...</p>;
-    }
+
+    if (!user || isFetching) return <p>Loading menu...</p>;
 
     return (
-        <div>
-            <h2>Menu Management for {user.restaurantName}</h2>
-            {/* Your original HTML form structure */}
-            <form onSubmit={handleSubmit} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem', borderRadius: '8px' }}>
-                <h3>{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</h3>
-                <select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required>
-                    <option value="">-- Select a Category --</option>
-                        {renderCategoryOptions(categories)}
-                </select>
-                <br/>
-                <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Item Name" required /><br/>
-                <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Price" step="0.01" required /><br/>
-                <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Description (optional)"></textarea><br/>
-                
-                <FormControlLabel
-                    control={<Checkbox checked={formData.isBundle} onChange={handleInputChange} name="isBundle" />}
-                    label="This is a 'Formule' / Bundle Item (with choices)"
-                />
-                <br/>
-                
-                <button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? 'Saving...' : (editingId ? 'Update Item' : 'Add Item')}
-                </button>
-                {editingId && <button type="button" onClick={resetForm} disabled={isSubmitting}>Cancel</button>}
-            </form>
-            <h3>Existing Menu Items</h3>
-            {menuItems.length > 0 ? (
-                menuItems.map(item => (
-                    <div key={item.id} style={{ borderBottom: '1px solid #eee', padding: '1rem 0.5rem' }}>
-                        <strong>{item.name}</strong> 
-                        {/* ✅ THE MINIMAL FIX: Check 'item.bundle' from backend */}
-                        {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule/Bundle)</span>}
-                        ({item.categoryName || 'Uncategorized'}) - ${item.price ? item.price.toFixed(2) : '0.00'}
-                        <p>{item.description || 'No description'}</p>
-                        <button onClick={() => handleEdit(item)}>Edit</button>
-                        <button onClick={() => handleDelete(item.id)}>Delete</button>
-                        
-                        {/* ✅ THE MINIMAL FIX: Check 'item.bundle' from backend */}
-                        {item.bundle && (
-                            <button type="button" onClick={() => openOptionsManager(item)}>Manage Choices</button>
-                        )}
-
-                        <FormControlLabel
-                            control={<Switch checked={item.isAvailable} onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)} color="success" />}
-                            label={item.isAvailable ? "Available" : "Out of Stock"}
+        <Box>
+            <Typography variant="h4" gutterBottom>Menu Management for {user.restaurantName}</Typography>
+            <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 3 }}>
+                <Typography variant="h6">{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</Typography>
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item xs={12} sm={6}>
+                        <TextField select label="Category" name="categoryId" value={formData.categoryId} onChange={handleInputChange} required fullWidth>
+                            <MenuItem value="">-- Select a Category --</MenuItem>
+                            {renderCategoryOptions(categories)}
+                        </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField label="Item Name" name="name" value={formData.name} onChange={handleInputChange} required fullWidth />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField label="Price" name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth InputProps={{ inputProps: { step: "0.01" } }} />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField label="Description (optional)" name="description" value={formData.description} onChange={handleInputChange} fullWidth multiline rows={2} />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <FormControlLabel 
+                            control={<Checkbox checked={formData.isBundle} onChange={handleInputChange} name="isBundle" />} 
+                            label="This is a 'Formule' / Bundle Item (with choices)" 
                         />
-                    </div>
-                ))
-            ) : (
-                <p>No menu items found. Add one using the form above to get started!</p>
-            )}
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Button type="submit" variant="contained" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : (editingId ? 'Update Item' : 'Add Item')}</Button>
+                        {editingId && <Button onClick={resetForm} disabled={isSubmitting} sx={{ ml: 1 }}>Cancel</Button>}
+                    </Grid>
+                </Grid>
+            </Paper>
 
-            <MenuItemOptionsModal 
-                open={optionsModalOpen}
-                handleClose={() => setOptionsModalOpen(false)}
-                menuItem={currentItemForOptions}
-                onUpdate={fetchAllData}
-            />
-        </div>
+            <Typography variant="h6">Existing Menu Items</Typography>
+            {menuItems.map(item => (
+                <Paper key={item.id} sx={{ p: 2, my: 1, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="body1">
+                            <strong>{item.name}</strong> 
+                            {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule/Bundle)</span>}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">{item.categoryName || 'Uncategorized'} - ${item.price?.toFixed(2)}</Typography>
+                    </Box>
+                    <FormControlLabel control={<Switch checked={item.isAvailable} onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)}/>} label={item.isAvailable ? "Available" : "Out of Stock"} />
+                    <Button size="small" onClick={() => handleEdit(item)}>Edit</Button>
+                    {item.bundle && <Button size="small" variant="outlined" onClick={() => openOptionsManager(item)}>Manage Choices</Button>}
+                    <Button size="small" color="error" onClick={() => handleDelete(item.id)}>Delete</Button>
+                </Paper>
+            ))}
+            
+            <MenuItemOptionsModal open={optionsModalOpen} handleClose={() => setOptionsModalOpen(false)} menuItem={currentItemForOptions} onUpdate={fetchAllData} />
+        </Box>
     );
 }
 
