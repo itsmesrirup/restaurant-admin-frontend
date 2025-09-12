@@ -27,6 +27,7 @@ function MenuManagement() {
     const [isFetching, setIsFetching] = useState(true);
     const [optionsModalOpen, setOptionsModalOpen] = useState(false);
     const [currentItemForOptions, setCurrentItemForOptions] = useState(null);
+    const [isModalLoading, setIsModalLoading] = useState(false);
 
     const fetchAllData = useCallback(async () => {
         if (!user) return;
@@ -103,6 +104,75 @@ function MenuManagement() {
         setOptionsModalOpen(true);
     };
 
+    // --- NEW LOGIC for managing modal state ---
+    const updateCurrentItemOptions = (updateFn) => {
+        setCurrentItemForOptions(currentItem => {
+            const newItem = { ...currentItem, options: updateFn(currentItem.options) };
+            return newItem;
+        });
+    };
+
+    const handleAddOptionGroup = () => {
+        const newOption = { name: 'New Choice Group', minChoices: 1, maxChoices: 1 };
+        toast.promise(apiClient.post(`/api/menu-items/${currentItemForOptions.id}/options`, newOption), {
+            loading: 'Adding...',
+            success: (savedOption) => { fetchAllData(); setCurrentItemForOptions(prev => ({ ...prev, options: [...(prev.options || []), savedOption] })); return "Group added!"; },
+            error: "Failed to add group."
+        });
+    };
+    
+    const handleUpdateOption = (optionId, field, value) => {
+        updateCurrentItemOptions(options => options.map(opt => opt.id === optionId ? { ...opt, [field]: value } : opt));
+    };
+
+    const handleSaveOption = (option) => {
+        const payload = { name: option.name, minChoices: option.minChoices, maxChoices: option.maxChoices };
+        toast.promise(apiClient.put(`/api/menu-item-options/${option.id}`, payload), {
+            loading: 'Saving...', success: 'Saved!', error: 'Failed to save.'
+        });
+    };
+
+    const handleDeleteOption = (optionId) => {
+        if (!window.confirm("Delete group?")) return;
+        toast.promise(apiClient.delete(`/api/menu-item-options/${optionId}`), {
+            loading: 'Deleting...',
+            success: () => { fetchAllData(); updateCurrentItemOptions(options => options.filter(opt => opt.id !== optionId)); return 'Group deleted!'; },
+            error: (err) => err.message
+        });
+    };
+    
+    const handleAddChoice = (optionId) => {
+        const newChoice = { name: 'New Choice', priceAdjustment: 0.0 };
+        toast.promise(apiClient.post(`/api/menu-item-options/${optionId}/choices`, newChoice), {
+            loading: 'Adding...',
+            success: (savedChoice) => { fetchAllData(); updateCurrentItemOptions(options => options.map(opt => opt.id === optionId ? { ...opt, choices: [...(opt.choices || []), savedChoice] } : opt)); return "Choice added!"; },
+            error: "Failed to add choice."
+        });
+    };
+
+    const handleUpdateChoice = (optionId, choiceId, field, value) => {
+        updateCurrentItemOptions(options => options.map(opt => {
+            if (opt.id !== optionId) return opt;
+            return { ...opt, choices: opt.choices.map(ch => ch.id === choiceId ? { ...ch, [field]: value } : ch) };
+        }));
+    };
+    
+    const handleSaveChoice = (choice) => {
+        const payload = { name: choice.name, priceAdjustment: choice.priceAdjustment };
+        toast.promise(apiClient.put(`/api/menu-item-option-choices/${choice.id}`, payload), {
+            loading: 'Saving...', success: 'Saved!', error: 'Failed to save.'
+        });
+    };
+
+    const handleDeleteChoice = (optionId, choiceId) => {
+        if (!window.confirm("Delete choice?")) return;
+        toast.promise(apiClient.delete(`/api/menu-item-option-choices/${choiceId}`), {
+            loading: 'Deleting...',
+            success: () => { fetchAllData(); updateCurrentItemOptions(options => options.map(opt => opt.id === optionId ? { ...opt, choices: opt.choices.filter(ch => ch.id !== choiceId) } : opt)); return 'Choice deleted!'; },
+            error: 'Failed to delete.'
+        });
+    };
+
     if (!user || isFetching) return <p>Loading menu...</p>;
 
     return (
@@ -111,44 +181,19 @@ function MenuManagement() {
             <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 3 }}>
                 <Typography variant="h6">{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</Typography>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid item xs={12} sm={6} md={4}>
-                        <TextField select label="Category *" name="categoryId" value={formData.categoryId} onChange={handleInputChange} required fullWidth>
-                            <MenuItem value="">-- Select a Category --</MenuItem>
-                            {renderCategoryOptions(categories)}
-                        </TextField>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                        <TextField label="Item Name *" name="name" value={formData.name} onChange={handleInputChange} required fullWidth />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                        <TextField label="Price *" name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth InputProps={{ inputProps: { step: "0.01" } }} />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField label="Description (optional)" name="description" value={formData.description} onChange={handleInputChange} fullWidth multiline rows={2} />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <FormControlLabel 
-                            control={<Checkbox checked={formData.isBundle} onChange={handleInputChange} name="isBundle" />} 
-                            label="This is a 'Formule' / Bundle Item (with choices)" 
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <Button type="submit" variant="contained" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : (editingId ? 'Update Item' : 'Add Item')}</Button>
-                        {editingId && <Button onClick={resetForm} disabled={isSubmitting} sx={{ ml: 1 }}>Cancel</Button>}
-                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}><TextField select label="Category *" name="categoryId" value={formData.categoryId} onChange={handleInputChange} required fullWidth><MenuItem value="">-- Select a Category --</MenuItem>{renderCategoryOptions(categories)}</TextField></Grid>
+                    <Grid item xs={12} sm={6} md={4}><TextField label="Item Name *" name="name" value={formData.name} onChange={handleInputChange} required fullWidth /></Grid>
+                    <Grid item xs={12} sm={6} md={4}><TextField label="Price *" name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth InputProps={{ inputProps: { step: "0.01" } }} /></Grid>
+                    <Grid item xs={12} sm={6}><TextField label="Description (optional)" name="description" value={formData.description} onChange={handleInputChange} fullWidth multiline rows={2} /></Grid>
+                    <Grid item xs={12} sm={6}><FormControlLabel control={<Checkbox checked={formData.isBundle} onChange={handleInputChange} name="isBundle" />} label="This is a 'Formule' / Bundle Item (with choices)" /></Grid>
+                    <Grid item xs={12}><Button type="submit" variant="contained" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : (editingId ? 'Update Item' : 'Add Item')}</Button>{editingId && <Button onClick={resetForm} disabled={isSubmitting} sx={{ ml: 1 }}>Cancel</Button>}</Grid>
                 </Grid>
             </Paper>
 
             <Typography variant="h6">Existing Menu Items</Typography>
             {menuItems.map(item => (
                 <Paper key={item.id} sx={{ p: 2, my: 1, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="body1">
-                            <strong>{item.name}</strong> 
-                            {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule/Bundle)</span>}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">{item.categoryName || 'Uncategorized'} - ${item.price?.toFixed(2)}</Typography>
-                    </Box>
+                    <Box sx={{ flexGrow: 1 }}><Typography variant="body1"><strong>{item.name}</strong> {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule/Bundle)</span>}</Typography><Typography variant="caption" color="text.secondary">{item.categoryName || 'Uncategorized'} - ${item.price?.toFixed(2)}</Typography></Box>
                     <FormControlLabel control={<Switch checked={item.isAvailable} onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)}/>} label={item.isAvailable ? "Available" : "Out of Stock"} />
                     <Button size="small" onClick={() => handleEdit(item)}>Edit</Button>
                     {item.bundle && <Button size="small" variant="outlined" onClick={() => openOptionsManager(item)}>Manage Choices</Button>}
@@ -156,7 +201,10 @@ function MenuManagement() {
                 </Paper>
             ))}
             
-            <MenuItemOptionsModal open={optionsModalOpen} handleClose={() => setOptionsModalOpen(false)} menuItem={currentItemForOptions} onUpdate={fetchAllData} />
+            <MenuItemOptionsModal open={optionsModalOpen} handleClose={() => setOptionsModalOpen(false)} menuItem={currentItemForOptions} isLoading={isModalLoading}
+                onAddOptionGroup={handleAddOptionGroup} onUpdateOption={handleUpdateOption} onSaveOption={handleSaveOption} onDeleteOption={handleDeleteOption}
+                onAddChoice={handleAddChoice} onUpdateChoice={handleUpdateChoice} onSaveChoice={handleSaveChoice} onDeleteChoice={handleDeleteChoice}
+            />
         </Box>
     );
 }
