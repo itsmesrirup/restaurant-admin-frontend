@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Switch, FormControlLabel,Checkbox } from '@mui/material'; // Import MUI components for the toggle
+import { Switch, FormControlLabel, Checkbox } from '@mui/material'; // I've kept Checkbox here as you were using it
 import MenuItemOptionsModal from './MenuItemOptionsModal';
 
 // Helper function to render categories and subcategories in the dropdown
@@ -21,11 +21,13 @@ const renderCategoryOptions = (categories, level = 0) => {
     return options;
 };
 
+const INITIAL_FORM_STATE = { name: '', price: '', description: '', categoryId: '', isBundle: false };
+
 function MenuManagement() {
     const { user } = useAuth();
     const [menuItems, setMenuItems] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [formData, setFormData] = useState({ name: '', price: '', description: '', categoryId: '', isBundle: false });
+    const [formData, setFormData] = useState(INITIAL_FORM_STATE);
     const [editingId, setEditingId] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
@@ -39,7 +41,6 @@ function MenuManagement() {
         setIsFetching(true);
         try {
             const [menuData, categoryData] = await Promise.all([
-                // ✅ CORRECT ENDPOINT
                 apiClient.get(`/api/menu-items/by-restaurant`),
                 apiClient.get('/api/categories/by-restaurant')
             ]);
@@ -58,13 +59,12 @@ function MenuManagement() {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        // Handle checkbox for isBundle
         const val = type === 'checkbox' ? checked : value;
         setFormData(prev => ({ ...prev, [name]: val }));
     };
 
     const resetForm = () => {
-        setFormData({ name: '', price: '', description: '', categoryId: '', isBundle: false });
+        setFormData(INITIAL_FORM_STATE);
         setEditingId(null);
     };
 
@@ -76,13 +76,14 @@ function MenuManagement() {
         }
         setIsSubmitting(true);
         
+        // ✅ THE MINIMAL FIX: Map the state 'isBundle' to the payload property 'bundle'
         const payload = { 
             name: formData.name,
-            price: parseFloat(formData.price), // Ensure price is a number
+            price: parseFloat(formData.price),
             description: formData.description,
             restaurantId: user.restaurantId,
             categoryId: parseInt(formData.categoryId),
-            bundle: formData.isBundle // Send the bundle flag
+            bundle: formData.isBundle // This is the key change
         };
         
         const promise = editingId 
@@ -93,7 +94,7 @@ function MenuManagement() {
             loading: editingId ? 'Updating item...' : 'Adding item...',
             success: () => {
                 resetForm();
-                fetchAllData(); // Refresh all data
+                fetchAllData();
                 return editingId ? 'Item updated!' : 'Item added!';
             },
             error: (err) => `Error: ${err.message}`
@@ -106,13 +107,14 @@ function MenuManagement() {
             name: item.name, 
             price: item.price, 
             description: item.description || '', 
-            // The categoryId from the response will now be available
             categoryId: item.categoryId ? String(item.categoryId) : '',
-            isBundle: item.isBundle || false // Set the bundle flag
+            // ✅ THE MINIMAL FIX: Read from 'item.bundle' which comes from the backend
+            isBundle: item.bundle || false 
         });
     };
     
     const handleDelete = async (itemId) => {
+        // Your original, more descriptive confirmation message
         if (!window.confirm("Are you sure you want to delete this item?")) return;
         
         const promise = apiClient.delete(`/api/menu-items/${itemId}`);
@@ -120,21 +122,20 @@ function MenuManagement() {
         toast.promise(promise, {
             loading: 'Deleting item...',
             success: () => {
-                fetchAllData(); // ✅ CORRECT FUNCTION
+                fetchAllData();
                 return 'Item deleted!';
             },
             error: (err) => `Error: ${err.message}`
         });
     };
 
-    // FUNCTION to handle the toggle
     const handleAvailabilityToggle = async (itemId, currentStatus) => {
         const promise = apiClient.patch(`/api/menu-items/${itemId}/availability`, { available: !currentStatus });
         
         toast.promise(promise, {
             loading: 'Updating availability...',
             success: () => {
-                fetchAllData(); // Refresh the list to show the new status
+                fetchAllData();
                 return 'Availability updated!';
             },
             error: (err) => err.message
@@ -153,6 +154,7 @@ function MenuManagement() {
     return (
         <div>
             <h2>Menu Management for {user.restaurantName}</h2>
+            {/* Your original HTML form structure */}
             <form onSubmit={handleSubmit} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem', borderRadius: '8px' }}>
                 <h3>{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</h3>
                 <select name="categoryId" value={formData.categoryId} onChange={handleInputChange} required>
@@ -164,7 +166,6 @@ function MenuManagement() {
                 <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Price" step="0.01" required /><br/>
                 <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Description (optional)"></textarea><br/>
                 
-                {/* Checkbox to mark an item as a bundle */}
                 <FormControlLabel
                     control={<Checkbox checked={formData.isBundle} onChange={handleInputChange} name="isBundle" />}
                     label="This is a 'Formule' / Bundle Item (with choices)"
@@ -180,25 +181,21 @@ function MenuManagement() {
             {menuItems.length > 0 ? (
                 menuItems.map(item => (
                     <div key={item.id} style={{ borderBottom: '1px solid #eee', padding: '1rem 0.5rem' }}>
-                        <strong>{item.name}</strong> ({item.categoryName || 'Uncategorized'}) - ${item.price ? item.price.toFixed(2) : '0.00'}
+                        <strong>{item.name}</strong> 
+                        {/* ✅ THE MINIMAL FIX: Check 'item.bundle' from backend */}
+                        {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule/Bundle)</span>}
+                        ({item.categoryName || 'Uncategorized'}) - ${item.price ? item.price.toFixed(2) : '0.00'}
                         <p>{item.description || 'No description'}</p>
                         <button onClick={() => handleEdit(item)}>Edit</button>
                         <button onClick={() => handleDelete(item.id)}>Delete</button>
                         
-                        {/* Button to open the options manager for bundle items */}
-                        {item.isBundle && (
+                        {/* ✅ THE MINIMAL FIX: Check 'item.bundle' from backend */}
+                        {item.bundle && (
                             <button type="button" onClick={() => openOptionsManager(item)}>Manage Choices</button>
                         )}
 
-                        {/* Availability Toggle Switch */}
                         <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={item.isAvailable}
-                                    onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)}
-                                    color="success"
-                                />
-                            }
+                            control={<Switch checked={item.isAvailable} onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)} color="success" />}
                             label={item.isAvailable ? "Available" : "Out of Stock"}
                         />
                     </div>
@@ -207,12 +204,11 @@ function MenuManagement() {
                 <p>No menu items found. Add one using the form above to get started!</p>
             )}
 
-            {/* Render the modal */}
             <MenuItemOptionsModal 
                 open={optionsModalOpen}
                 handleClose={() => setOptionsModalOpen(false)}
                 menuItem={currentItemForOptions}
-                onUpdate={fetchAllData} // Refresh the main list when options change
+                onUpdate={fetchAllData}
             />
         </div>
     );
