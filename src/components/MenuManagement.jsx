@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Switch, FormControlLabel, Checkbox, Paper, Typography, Box, TextField, Button, Select, MenuItem, Grid, FormControl, InputLabel } from '@mui/material';
+import { Switch, FormControlLabel, Checkbox, Paper, Typography, Box, TextField, Button, Select, MenuItem, Grid, FormControl, InputLabel, Divider } from '@mui/material';
 import MenuItemOptionsModal from './MenuItemOptionsModal';
 
 const renderCategoryOptions = (categories, level = 0) => {
     let options = [];
     categories.forEach(category => {
-        options.push(<MenuItem key={category.id} value={category.id} sx={{ pl: level * 2 }}>{category.name}</MenuItem>);
+        options.push(<MenuItem key={category.id} value={category.id} sx={{ pl: level * 2 + 2 }}>{category.name}</MenuItem>);
         if (category.subCategories?.length > 0) {
             options = options.concat(renderCategoryOptions(category.subCategories, level + 1));
         }
@@ -179,13 +179,14 @@ function MenuManagement() {
         <Box>
             <Typography variant="h4" gutterBottom>Menu Management for {user.restaurantName}</Typography>
             <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 3 }}>
-                <Typography variant="h6">{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</Typography>
-                <Grid container spacing={2} sx={{ mt: 1 }} alignItems="flex-start">
+                <Typography variant="h6" sx={{ mb: 2 }}>{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</Typography>
+                <Grid container spacing={2} alignItems="flex-start">
                     <Grid item xs={12} sm={6} md={4}>
                         <FormControl fullWidth required>
                             <InputLabel id="category-select-label">Category</InputLabel>
                             <Select
                                 labelId="category-select-label"
+                                id="category-select"
                                 label="Category"
                                 name="categoryId"
                                 value={formData.categoryId}
@@ -202,13 +203,13 @@ function MenuManagement() {
                     <Grid item xs={12} sm={6} md={4}>
                         <TextField label="Price" name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth InputProps={{ inputProps: { step: "0.01" } }} />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={8}>
                         <TextField label="Description (optional)" name="description" value={formData.description} onChange={handleInputChange} fullWidth multiline rows={3} />
                     </Grid>
-                    <Grid item xs={12} sm={6} sx={{ display: 'flex', alignItems: 'center', pt: { sm: 3 } }}>
-                        <FormControlLabel 
+                    <Grid item xs={12} sm={4} sx={{ display: 'flex', alignItems: 'center' }}>
+                         <FormControlLabel 
                             control={<Checkbox checked={formData.isBundle} onChange={handleInputChange} name="isBundle" />} 
-                            label="This is a 'Formule' / Bundle Item (with choices)" 
+                            label="This is a 'Formule' / Bundle Item" 
                         />
                     </Grid>
                     <Grid item xs={12}>
@@ -219,19 +220,40 @@ function MenuManagement() {
             </Paper>
 
             <Typography variant="h6">Existing Menu Items</Typography>
+            <Divider sx={{ my: 1 }} />
             {menuItems.map(item => (
-                <Paper key={item.id} sx={{ p: 2, my: 1, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ flexGrow: 1 }}><Typography variant="body1"><strong>{item.name}</strong> {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule/Bundle)</span>}</Typography><Typography variant="caption" color="text.secondary">{item.categoryName || 'Uncategorized'} - ${item.price?.toFixed(2)}</Typography></Box>
-                    <FormControlLabel control={<Switch checked={item.isAvailable} onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)}/>} label={item.isAvailable ? "Available" : "Out of Stock"} />
-                    <Button size="small" onClick={() => handleEdit(item)}>Edit</Button>
-                    {item.bundle && <Button size="small" variant="outlined" onClick={() => openOptionsManager(item)}>Manage Choices</Button>}
-                    <Button size="small" color="error" onClick={() => handleDelete(item.id)}>Delete</Button>
+                <Paper key={item.id} sx={{ p: 2, my: 1 }}>
+                    <Grid container alignItems="center" spacing={2}>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="body1">
+                                <strong>{item.name}</strong> 
+                                {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule)</span>}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">{item.categoryName || 'Uncategorized'} - ${item.price?.toFixed(2)}</Typography>
+                        </Grid>
+                        <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                            <FormControlLabel control={<Switch size="small" checked={item.isAvailable} onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)}/>} label="Available" />
+                            <Button size="small" variant="outlined" onClick={() => handleEdit(item)}>Edit</Button>
+                            {item.bundle && <Button size="small" variant="contained" onClick={() => openOptionsManager(item)}>Manage Choices</Button>}
+                            <Button size="small" variant="outlined" color="error" onClick={() => handleDelete(item.id)}>Delete</Button>
+                        </Grid>
+                    </Grid>
                 </Paper>
             ))}
             
-            <MenuItemOptionsModal open={optionsModalOpen} handleClose={() => setOptionsModalOpen(false)} menuItem={currentItemForOptions} isLoading={isModalLoading}
-                onAddOptionGroup={handleAddOptionGroup} onUpdateOption={handleUpdateOption} onSaveOption={handleSaveOption} onDeleteOption={handleDeleteOption}
-                onAddChoice={handleAddChoice} onUpdateChoice={handleUpdateChoice} onSaveChoice={handleSaveChoice} onDeleteChoice={handleDeleteChoice}
+            <MenuItemOptionsModal 
+                open={optionsModalOpen} 
+                handleClose={() => setOptionsModalOpen(false)} 
+                menuItem={currentItemForOptions} 
+                isLoading={isModalLoading}
+                onAddOptionGroup={handleAddOptionGroup} 
+                onUpdateOption={handleUpdateOption} 
+                onSaveOption={handleSaveOption} 
+                onDeleteOption={handleDeleteOption}
+                onAddChoice={handleAddChoice} 
+                onUpdateChoice={handleUpdateChoice} 
+                onSaveChoice={handleSaveChoice} 
+                onDeleteChoice={handleDeleteChoice}
             />
         </Box>
     );
