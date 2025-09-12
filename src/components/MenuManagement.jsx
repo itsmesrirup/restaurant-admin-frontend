@@ -80,7 +80,7 @@ function MenuManagement() {
     };
 
     const handleDelete = (itemId) => {
-        if (!window.confirm("Are you sure?")) return;
+        if (!window.confirm("Are you sure you want to delete this item?")) return;
         const promise = apiClient.delete(`/api/menu-items/${itemId}`);
         toast.promise(promise, {
             loading: 'Deleting...',
@@ -111,22 +111,22 @@ function MenuManagement() {
             <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 3 }}>
                 <Typography variant="h6">{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</Typography>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} md={4}>
                         <TextField select label="Category *" name="categoryId" value={formData.categoryId} onChange={handleInputChange} required fullWidth>
                             <MenuItem value="">-- Select a Category --</MenuItem>
                             {renderCategoryOptions(categories)}
                         </TextField>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} md={4}>
                         <TextField label="Item Name *" name="name" value={formData.name} onChange={handleInputChange} required fullWidth />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6} md={4}>
                         <TextField label="Price *" name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth InputProps={{ inputProps: { step: "0.01" } }} />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <TextField label="Description (optional)" name="description" value={formData.description} onChange={handleInputChange} fullWidth multiline rows={2} />
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid item xs={12} sm={6}>
                         <FormControlLabel 
                             control={<Checkbox checked={formData.isBundle} onChange={handleInputChange} name="isBundle" />} 
                             label="This is a 'Formule' / Bundle Item (with choices)" 
