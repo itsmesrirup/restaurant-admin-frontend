@@ -4,15 +4,10 @@ import { toast } from 'react-hot-toast';
 import { Switch, FormControlLabel, Checkbox, Paper, Typography, Box, TextField, Button, Select, MenuItem, Grid } from '@mui/material';
 import MenuItemOptionsModal from './MenuItemOptionsModal';
 
-// Helper function to render categories in the MUI Select component
 const renderCategoryOptions = (categories, level = 0) => {
     let options = [];
     categories.forEach(category => {
-        options.push(
-            <MenuItem key={category.id} value={category.id} sx={{ pl: level * 2 }}>
-                {category.name}
-            </MenuItem>
-        );
+        options.push(<MenuItem key={category.id} value={category.id} sx={{ pl: level * 2 }}>{category.name}</MenuItem>);
         if (category.subCategories?.length > 0) {
             options = options.concat(renderCategoryOptions(category.subCategories, level + 1));
         }
@@ -65,12 +60,8 @@ function MenuManagement() {
         if (!formData.categoryId) { return toast.error("Please select a category."); }
         setIsSubmitting(true);
         const payload = {
-            name: formData.name,
-            price: parseFloat(formData.price),
-            description: formData.description,
-            restaurantId: user.restaurantId,
-            categoryId: parseInt(formData.categoryId),
-            bundle: formData.isBundle // Correctly map 'isBundle' state to 'bundle' payload
+            name: formData.name, price: parseFloat(formData.price), description: formData.description,
+            restaurantId: user.restaurantId, categoryId: parseInt(formData.categoryId), bundle: formData.isBundle
         };
         const promise = editingId ? apiClient.put(`/api/menu-items/${editingId}`, payload) : apiClient.post('/api/menu-items', payload);
         toast.promise(promise, {
@@ -83,11 +74,8 @@ function MenuManagement() {
     const handleEdit = (item) => {
         setEditingId(item.id);
         setFormData({
-            name: item.name,
-            price: item.price,
-            description: item.description || '',
-            categoryId: item.categoryId ? String(item.categoryId) : '',
-            isBundle: item.bundle || false // Read from 'item.bundle' from backend
+            name: item.name, price: item.price, description: item.description || '',
+            categoryId: item.categoryId ? String(item.categoryId) : '', isBundle: item.bundle || false
         });
     };
 
@@ -120,8 +108,6 @@ function MenuManagement() {
     return (
         <Box>
             <Typography variant="h4" gutterBottom>Menu Management for {user.restaurantName}</Typography>
-            
-            {/* ✅ NEW: Form using MUI Grid for a clean, responsive layout */}
             <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 3 }}>
                 <Typography variant="h6">{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</Typography>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -157,7 +143,10 @@ function MenuManagement() {
             {menuItems.map(item => (
                 <Paper key={item.id} sx={{ p: 2, my: 1, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="body1"><strong>{item.name}</strong> {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule/Bundle)</span>}</Typography>
+                        <Typography variant="body1">
+                            <strong>{item.name}</strong> 
+                            {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule/Bundle)</span>}
+                        </Typography>
                         <Typography variant="caption" color="text.secondary">{item.categoryName || 'Uncategorized'} - ${item.price?.toFixed(2)}</Typography>
                     </Box>
                     <FormControlLabel control={<Switch checked={item.isAvailable} onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)}/>} label={item.isAvailable ? "Available" : "Out of Stock"} />
