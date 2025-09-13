@@ -184,7 +184,9 @@ function MenuManagement() {
                     {/* Row 1: Category, Name, Price */}
                     <Grid item xs={12} sm={6} md={3}>
                         <FormControl fullWidth required>
-                            <InputLabel id="category-select-label">Category</InputLabel>
+                            <InputLabel id="category-select-label" shrink>
+                                Category
+                            </InputLabel>
                             <Select
                                 labelId="category-select-label"
                                 id="category-select"
@@ -192,21 +194,26 @@ function MenuManagement() {
                                 name="categoryId"
                                 value={formData.categoryId}
                                 onChange={handleInputChange}
-                                size="small"
+                                size="medium"
+                                fullWidth
+                                displayEmpty
+                                MenuProps={{ PaperProps: { style: { maxHeight: 300 } } }}
                             >
-                                <MenuItem value=""><em>-- Select a Category --</em></MenuItem>
+                                <MenuItem value="">
+                                    <em>-- Select a Category --</em>
+                                </MenuItem>
                                 {renderCategoryOptions(categories)}
                             </Select>
                         </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
-                        <TextField label="Item Name" name="name" value={formData.name} onChange={handleInputChange} required fullWidth size="small" />
+                        <TextField label="Item Name" name="name" value={formData.name} onChange={handleInputChange} required fullWidth size="medium" />
                     </Grid>
                     <Grid item xs={12} sm={6} md={2}>
-                        <TextField label="Price" name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth size="small" InputProps={{ inputProps: { step: "0.01", min: "0" } }} />
+                        <TextField label="Price" name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth size="medium" InputProps={{ inputProps: { step: "0.01", min: "0" } }} />
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
-                        <TextField label="Description (optional)" name="description" value={formData.description} onChange={handleInputChange} fullWidth size="small" multiline rows={2} />
+                        <TextField label="Description (optional)" name="description" value={formData.description} onChange={handleInputChange} fullWidth size="medium" multiline rows={2} />
                     </Grid>
                     {/* Row 2: Bundle & Button */}
                     <Grid item xs={12} sm={6} md={3}>
@@ -223,7 +230,6 @@ function MenuManagement() {
                     </Grid>
                 </Grid>
             </Paper>
-
             <Typography variant="h6">Existing Menu Items</Typography>
             <Divider sx={{ my: 1 }} />
             {menuItems.map(item => (
@@ -245,7 +251,6 @@ function MenuManagement() {
                     </Grid>
                 </Paper>
             ))}
-            
             <MenuItemOptionsModal 
                 open={optionsModalOpen} 
                 handleClose={() => setOptionsModalOpen(false)} 
