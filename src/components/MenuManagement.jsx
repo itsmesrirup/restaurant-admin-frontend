@@ -178,12 +178,11 @@ function MenuManagement() {
     return (
         <Box>
             <Typography variant="h4" gutterBottom>Menu Management for {user.restaurantName}</Typography>
-            <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 3 }}>
+            <Paper component="form" onSubmit={handleSubmit} sx={{ p: 3, mb: 4, borderRadius: 3, boxShadow: 3 }}>
                 <Typography variant="h6" sx={{ mb: 2 }}>{editingId ? 'Edit Menu Item' : 'Add New Menu Item'}</Typography>
-                <Grid container spacing={2} alignItems="flex-start"> 
-                    
-                    {/* --- Row 1 --- */}
-                    <Grid item xs={12} sm={6} md={4}>
+                <Grid container spacing={2} alignItems="center">
+                    {/* Row 1: Category, Name, Price */}
+                    <Grid item xs={12} sm={6} md={3}>
                         <FormControl fullWidth required>
                             <InputLabel id="category-select-label">Category</InputLabel>
                             <Select
@@ -193,35 +192,34 @@ function MenuManagement() {
                                 name="categoryId"
                                 value={formData.categoryId}
                                 onChange={handleInputChange}
+                                size="small"
                             >
                                 <MenuItem value=""><em>-- Select a Category --</em></MenuItem>
                                 {renderCategoryOptions(categories)}
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                        <TextField label="Item Name " name="name" value={formData.name} onChange={handleInputChange} required fullWidth />
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField label="Item Name" name="name" value={formData.name} onChange={handleInputChange} required fullWidth size="small" />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2}>
+                        <TextField label="Price" name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth size="small" InputProps={{ inputProps: { step: "0.01", min: "0" } }} />
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
-                        <TextField label="Price " name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth InputProps={{ inputProps: { step: "0.01" } }} />
+                        <TextField label="Description (optional)" name="description" value={formData.description} onChange={handleInputChange} fullWidth size="small" multiline rows={2} />
                     </Grid>
-
-                    {/* --- Row 2 --- */}
-                    <Grid item xs={12} sm={8}>
-                        <TextField label="Description (optional)" name="description" value={formData.description} onChange={handleInputChange} fullWidth multiline rows={3} />
-                    </Grid>
-                    <Grid item xs={12} sm={4} sx={{ display: 'flex', alignItems: 'center' }}> 
+                    {/* Row 2: Bundle & Button */}
+                    <Grid item xs={12} sm={6} md={3}>
                         <FormControlLabel 
                             control={<Checkbox checked={formData.isBundle} onChange={handleInputChange} name="isBundle" />} 
                             label="This is a 'Formule' / Bundle Item"
-                            sx={{ height: '100%', display: 'flex', alignItems: 'center' }}
                         />
                     </Grid>
-
-                    {/* --- Row 3 --- */}
-                    <Grid item xs={12}>
-                        <Button type="submit" variant="contained" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : (editingId ? 'Update Item' : 'Add Item')}</Button>
-                        {editingId && <Button onClick={resetForm} disabled={isSubmitting} sx={{ ml: 1 }}>Cancel</Button>}
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Button type="submit" variant="contained" color="primary" fullWidth disabled={isSubmitting}>
+                            {isSubmitting ? 'Saving...' : (editingId ? 'Update Item' : 'Add Item')}
+                        </Button>
+                        {editingId && <Button onClick={resetForm} disabled={isSubmitting} sx={{ mt: 1 }} color="secondary" fullWidth>Cancel</Button>}
                     </Grid>
                 </Grid>
             </Paper>
