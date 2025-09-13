@@ -86,9 +86,29 @@ function OrderDashboard() {
                                     <Typography variant="body1" sx={{ mt: 1 }}><strong>Status: {order.status}</strong></Typography>
                                     
                                     <Box component="ul" sx={{ listStyle: 'none', p: 0, mt: 1 }}>
-                                        {order.items?.map(item => (
-                                            <li key={item.menuItemId}>{item.quantity} x {item.name}</li>
-                                        ))}
+                                        {order.items && order.items.map(item => {
+                                            // Logic to parse and display selected options
+                                            let selectedOptions = [];
+                                            if (item.selectedOptions) {
+                                                try {
+                                                    selectedOptions = JSON.parse(item.selectedOptions);
+                                                } catch (e) {
+                                                    console.error("Failed to parse selected options", e);
+                                                }
+                                            }
+                                            
+                                            return (
+                                                <li key={item.menuItemId}>
+                                                    {item.quantity} x {item.name}
+                                                    {/* Render the choices if they exist */}
+                                                    {selectedOptions.length > 0 && (
+                                                        <Box component="ul" sx={{ pl: 2, fontSize: '0.9rem', color: 'text.secondary' }}>
+                                                            {selectedOptions.map((opt, index) => <li key={index}>{opt}</li>)}
+                                                        </Box>
+                                                    )}
+                                                </li>
+                                            );
+                                        })}
                                     </Box>
                                     
                                     <Typography variant="h6" sx={{ mt: 1 }}><strong>Total: ${order.totalPrice?.toFixed(2)}</strong></Typography>
