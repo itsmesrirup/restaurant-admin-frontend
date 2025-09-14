@@ -87,20 +87,24 @@ function OrderDashboard() {
                                     
                                     <Box component="ul" sx={{ listStyle: 'none', p: 0, mt: 1 }}>
                                         {order.items && order.items.map(item => {
-                                            // Logic to parse and display selected options
+                                            // Defensive parsing of selectedOptions
                                             let selectedOptions = [];
                                             if (item.selectedOptions) {
-                                                try {
-                                                    selectedOptions = JSON.parse(item.selectedOptions);
-                                                } catch (e) {
-                                                    console.error("Failed to parse selected options", e);
+                                                if (Array.isArray(item.selectedOptions)) {
+                                                    selectedOptions = item.selectedOptions;
+                                                } else if (typeof item.selectedOptions === "string") {
+                                                    try {
+                                                        selectedOptions = JSON.parse(item.selectedOptions);
+                                                    } catch (e) {
+                                                        console.error("Failed to parse selected options", e, item.selectedOptions);
+                                                        selectedOptions = [];
+                                                    }
                                                 }
                                             }
-                                            
+
                                             return (
                                                 <li key={item.menuItemId}>
                                                     {item.quantity} x {item.name}
-                                                    {/* Render the choices if they exist */}
                                                     {selectedOptions.length > 0 && (
                                                         <Box component="ul" sx={{ pl: 2, fontSize: '0.9rem', color: 'text.secondary' }}>
                                                             {selectedOptions.map((opt, index) => (
