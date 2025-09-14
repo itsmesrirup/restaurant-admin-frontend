@@ -103,7 +103,11 @@ function OrderDashboard() {
                                                     {/* Render the choices if they exist */}
                                                     {selectedOptions.length > 0 && (
                                                         <Box component="ul" sx={{ pl: 2, fontSize: '0.9rem', color: 'text.secondary' }}>
-                                                            {selectedOptions.map((opt, index) => <li key={index}>{opt}</li>)}
+                                                            {selectedOptions.map((opt, index) => (
+                                                                <li key={index}>
+                                                                    <strong>{opt.optionName}:</strong> {opt.choices.join(', ')}
+                                                                </li>
+                                                            ))}
                                                         </Box>
                                                     )}
                                                 </li>
