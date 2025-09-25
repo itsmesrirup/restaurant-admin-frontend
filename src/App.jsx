@@ -7,6 +7,7 @@ import ReservationManagement from './components/ReservationManagement';
 import SettingsPage from './components/SettingsPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import CategoryManagement from './components/CategoryManagement';
+import SpecialsManagement from './components/SpecialsManagement';
 import AnalyticsPage from './components/AnalyticsPage';
 import { Toaster } from 'react-hot-toast';
 
@@ -23,6 +24,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SupervisedUserCircleIcon from '@mui/icons-material/SupervisedUserCircle';
 import LogoutIcon from '@mui/icons-material/Logout';
+import StarIcon from '@mui/icons-material/Star';
 
 const drawerWidth = 240;
 
@@ -57,6 +59,7 @@ function App() {
         { text: 'Analytics', view: 'analytics', icon: <BarChartIcon /> },
         { text: 'Menu Management', view: 'menu', icon: <RestaurantMenuIcon /> },
         { text: 'Category Management', view: 'category', icon: <CategoryIcon /> },
+        { text: 'Specials', view: 'specials', icon: <StarIcon /> },
         { text: 'Reservations', view: 'reservations', icon: <EventSeatIcon /> },
         { text: 'Settings', view: 'settings', icon: <SettingsIcon /> },
     ];
@@ -182,6 +185,7 @@ function App() {
                 {!isSuperAdmin && view === 'orders' && <OrderDashboard />}
                 {!isSuperAdmin && view === 'menu' && <MenuManagement />}
                 {!isSuperAdmin && view === 'reservations' && <ReservationManagement />}
+                {!isSuperAdmin && view === 'specials' && <SpecialsManagement />}
                 {!isSuperAdmin && view === 'settings' && <SettingsPage />}
                 {!isSuperAdmin && view === 'category' && <CategoryManagement />}
                 {!isSuperAdmin && view === 'analytics' && <AnalyticsPage />}
