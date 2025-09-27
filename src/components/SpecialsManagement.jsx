@@ -196,28 +196,38 @@ function SpecialsManagement() {
 
             <Paper sx={{ p: 2, mb: 3 }}>
                 <Typography variant="h6">Your Special Menus</Typography>
-                <List>
+                <Box>
                     {specialMenus.map(menu => {
                         const status = getMenuStatus(menu);
                         return (
-                            <ListItem key={menu.id} secondaryAction={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    {/* ✅ Use the Chip for a beautiful status badge */}
-                                    <Chip label={status.text} color={status.color} size="small" />
-                                    <IconButton edge="end" aria-label="edit" onClick={() => handleEditMenu(menu)}>
-                                        <EditIcon />
-                                    </IconButton>
-                                    <Button size="small" variant="contained" onClick={() => setSelectedMenu(menu)}>Manage Items</Button>
-                                </Box>
-                            }>
-                                <ListItemText 
-                                    primary={menu.title} 
-                                    secondary={`Active from ${menu.startDate} to ${menu.endDate}`} 
-                                />
-                            </ListItem>
+                            // Use a Paper for each item for better visual separation
+                            <Paper key={menu.id} sx={{ p: 2, my: 1, border: '1px solid #eee' }}>
+                                {/* Use a Grid container for a responsive row */}
+                                <Grid container spacing={2} alignItems="center">
+                                    <Grid item xs={12} sm>
+                                        <ListItemText 
+                                            primary={menu.title} 
+                                            secondary={`Active from ${menu.startDate} to ${menu.endDate}`} 
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm="auto" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                        <Chip label={status.text} color={status.color} size="small" />
+                                        <IconButton aria-label="edit" onClick={() => handleEditMenu(menu)}>
+                                            <EditIcon />
+                                        </IconButton>
+                                        <Button 
+                                            size="small" 
+                                            variant={selectedMenu?.id === menu.id ? "outlined" : "contained"} 
+                                            onClick={() => setSelectedMenu(menu)}
+                                        >
+                                            Manage Items
+                                        </Button>
+                                    </Grid>
+                                </Grid>
+                            </Paper>
                         );
                     })}
-                </List>
+                </Box>
             </Paper>
 
             {selectedMenu && (
