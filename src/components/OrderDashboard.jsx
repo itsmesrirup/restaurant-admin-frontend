@@ -1,43 +1,41 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Box, Typography, Button, Paper, Grid } from '@mui/material';
+import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress } from '@mui/material';
 
 function OrderDashboard() {
     const { user } = useAuth();
     const [orders, setOrders] = useState([]);
-    const [isFetchingInitial, setIsFetchingInitial] = useState(true);
-    const [filter, setFilter] = useState('PENDING');
+    const [isLoading, setIsLoading] = useState(true);
+    const [filter, setFilter] = useState('ALL');
+    const [page, setPage] = useState(1);
+    const ordersPerPage = 9;
 
     const fetchOrders = useCallback(async () => {
         if (!user) return;
         try {
-            const data = await apiClient.get(`/api/orders/byRestaurant/${user.restaurantId}`);
+            const data = await apiClient.get('/api/orders/by-restaurant');
             data.sort((a, b) => b.id - a.id);
             setOrders(data);
         } catch (error) {
-            console.error("Failed to fetch orders:", error);
-            if (isFetchingInitial) {
-                toast.error("Could not load orders.");
-            }
+            // Only show toast on the initial load, not silent refreshes
+            if (isLoading) toast.error("Could not load order history.");
         } finally {
-            if (isFetchingInitial) {
-                setIsFetchingInitial(false);
-            }
+            setIsLoading(false);
         }
-    }, [user, isFetchingInitial]);
+    }, [user, isLoading]); // Dependency on isLoading ensures toast only shows once
 
+    // ✅ RESTORED: useEffect for polling
     useEffect(() => {
         if (user) {
-            fetchOrders();
-            const interval = setInterval(fetchOrders, 15000);
-            return () => clearInterval(interval);
+            fetchOrders(); // Initial fetch
+            const interval = setInterval(fetchOrders, 15000); // Poll every 15 seconds
+            return () => clearInterval(interval); // Cleanup
         }
     }, [user, fetchOrders]);
 
-    const handleUpdateStatus = async (orderId, newStatus) => {
+    const handleUpdateStatus = (orderId, newStatus) => {
         const promise = apiClient.patch(`/api/orders/${orderId}/status`, { status: newStatus });
-        
         toast.promise(promise, {
             loading: 'Updating status...',
             success: (updatedOrder) => {
@@ -54,84 +52,79 @@ function OrderDashboard() {
         if (filter === 'ALL') return orders;
         return orders.filter(order => order.status === filter);
     }, [orders, filter]);
+    
+    const paginatedOrders = useMemo(() => {
+        const startIndex = (page - 1) * ordersPerPage;
+        return filteredOrders.slice(startIndex, startIndex + ordersPerPage);
+    }, [filteredOrders, page, ordersPerPage]);
 
-    if (!user || isFetchingInitial) {
-        return <p>Loading live orders...</p>;
+    const handlePageChange = (event, value) => {
+        setPage(value);
+        window.scrollTo(0, 0);
+    };
+
+    if (isLoading) {
+        return <CircularProgress />;
     }
 
     return (
-        // ✅ Use Typography for consistent text styling
         <Box>
-            <Typography variant="h4" gutterBottom>Live Orders for {user.restaurantName}</Typography>
-            
+            <Typography variant="h4" gutterBottom>Live Order Management</Typography>
             <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                 <Typography variant="body1"><strong>Filter:</strong></Typography>
-                {/* ✅ Use MUI Buttons for consistent styling */}
-                <Button variant={filter === 'PENDING' ? 'contained' : 'outlined'} onClick={() => setFilter('PENDING')}>Pending</Button>
-                <Button variant={filter === 'CONFIRMED' ? 'contained' : 'outlined'} onClick={() => setFilter('CONFIRMED')}>Confirmed</Button>
-                <Button variant={filter === 'PREPARING' ? 'contained' : 'outlined'} onClick={() => setFilter('PREPARING')}>Preparing</Button>
-                <Button variant={filter === 'ALL' ? 'contained' : 'outlined'} onClick={() => setFilter('ALL')}>Show All</Button>
+                <Button variant={filter === 'PENDING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PENDING'); setPage(1); }}>Pending</Button>
+                <Button variant={filter === 'CONFIRMED' ? 'contained' : 'outlined'} onClick={() => { setFilter('CONFIRMED'); setPage(1); }}>Confirmed</Button>
+                <Button variant={filter === 'PREPARING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PREPARING'); setPage(1); }}>Preparing</Button>
+                <Button variant={filter === 'ALL' ? 'contained' : 'outlined'} onClick={() => { setFilter('ALL'); setPage(1); }}>Show All</Button>
             </Box>
             
             {filteredOrders.length > 0 ? (
-                // ✅ Use a Grid container for better responsive layout of order cards
-                <Grid container spacing={2}>
-                    {filteredOrders.map(order => (
-                        <Grid item xs={12} sm={6} md={4} key={order.id}>
-                            {/* ✅ Use a Paper component for the card */}
-                            <Paper elevation={3} sx={{ p: 2, borderRadius: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                <Box sx={{ flexGrow: 1 }}>
-                                    <Typography variant="h6">Order #{order.id}</Typography>
+                <>
+                    <Grid container spacing={2}>
+                        {paginatedOrders.map(order => (
+                            <Grid item xs={12} sm={6} lg={4} key={order.id}>
+                                <Paper elevation={3} sx={{ p: 2, borderRadius: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                    <Box sx={{ flexGrow: 1 }}>
+                                        <Typography variant="h6">Order #{order.id}</Typography>
                                         {order.tableNumber && <Typography variant="h6" color="secondary">For Table #{order.tableNumber}</Typography>}
-                                    <Typography variant="body1" sx={{ mt: 1 }}><strong>Status: {order.status}</strong></Typography>
-                                    
-                                    <Box component="ul" sx={{ listStyle: 'none', p: 0, mt: 1 }}>
-                                        {order.items && order.items.map(item => {
-                                            // Defensive parsing of selectedOptions
-                                            let selectedOptions = [];
-                                            if (item.selectedOptions) {
-                                                if (Array.isArray(item.selectedOptions)) {
-                                                    selectedOptions = item.selectedOptions;
-                                                } else if (typeof item.selectedOptions === "string") {
-                                                    try {
-                                                        selectedOptions = JSON.parse(item.selectedOptions);
-                                                    } catch (e) {
-                                                        console.error("Failed to parse selected options", e, item.selectedOptions);
-                                                        selectedOptions = [];
-                                                    }
-                                                }
-                                            }
-
-                                            return (
-                                                <li key={item.menuItemId}>
-                                                    {item.quantity} x {item.name}
-                                                    {selectedOptions.length > 0 && (
-                                                        <Box component="ul" sx={{ pl: 2, fontSize: '0.9rem', color: 'text.secondary' }}>
-                                                            {selectedOptions.map((opt, index) => (
-                                                                <li key={index}>
-                                                                    <strong>{opt.optionName}:</strong> {opt.choices.join(', ')}
-                                                                </li>
-                                                            ))}
-                                                        </Box>
-                                                    )}
-                                                </li>
-                                            );
-                                        })}
+                                        <Typography variant="body1" sx={{ mt: 1 }}><strong>Status: {order.status}</strong></Typography>
+                                        <Box component="ul" sx={{ listStyle: 'none', p: 0, mt: 1 }}>
+                                            {order.items?.map((item, index) => {
+                                                let selectedOptions = [];
+                                                if (item.selectedOptions) try { selectedOptions = JSON.parse(item.selectedOptions); } catch (e) {}
+                                                return (
+                                                    <li key={`${item.menuItemId}-${index}`}>
+                                                        {item.quantity} x {item.name}
+                                                        {selectedOptions.length > 0 && (
+                                                            <Box component="ul" sx={{ pl: 2, fontSize: '0.9rem', color: 'text.secondary' }}>
+                                                                {selectedOptions.map((opt, i) => <li key={i}>{opt}</li>)}
+                                                            </Box>
+                                                        )}
+                                                    </li>
+                                                );
+                                            })}
+                                        </Box>
+                                        <Typography variant="h6" sx={{ mt: 1 }}><strong>Total: ${order.totalPrice?.toFixed(2)}</strong></Typography>
                                     </Box>
-                                    
-                                    <Typography variant="h6" sx={{ mt: 1 }}><strong>Total: ${order.totalPrice?.toFixed(2)}</strong></Typography>
-                                </Box>
-                                
-                                <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                    <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'CONFIRMED')}>Confirm</Button>
-                                    <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>Preparing</Button>
-                                    <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'READY_FOR_PICKUP')}>Ready</Button>
-                                    <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'DELIVERED')}>Deliver</Button>
-                                </Box>
-                            </Paper>
-                        </Grid>
-                    ))}
-                </Grid>
+                                    <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'CONFIRMED')}>Confirm</Button>
+                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>Preparing</Button>
+                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'READY_FOR_PICKUP')}>Ready</Button>
+                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'DELIVERED')}>Deliver</Button>
+                                    </Box>
+                                </Paper>
+                            </Grid>
+                        ))}
+                    </Grid>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                        <Pagination 
+                            count={Math.ceil(filteredOrders.length / ordersPerPage)} 
+                            page={page} 
+                            onChange={handlePageChange}
+                            color="primary"
+                        />
+                    </Box>
+                </>
             ) : (
                 <Typography>No orders match the current filter.</Typography>
             )}

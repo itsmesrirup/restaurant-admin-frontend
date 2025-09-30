@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './components/LoginPage';
 import OrderDashboard from './components/OrderDashboard';
@@ -8,6 +8,7 @@ import SettingsPage from './components/SettingsPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import CategoryManagement from './components/CategoryManagement';
 import SpecialsManagement from './components/SpecialsManagement';
+import UserManagement from './components/UserManagement';
 import AnalyticsPage from './components/AnalyticsPage';
 import { Toaster } from 'react-hot-toast';
 
@@ -25,16 +26,64 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import SupervisedUserCircleIcon from '@mui/icons-material/SupervisedUserCircle';
 import LogoutIcon from '@mui/icons-material/Logout';
 import StarIcon from '@mui/icons-material/Star';
+import KdsView from './components/KdsView'; 
+import DvrIcon from '@mui/icons-material/Dvr'; // Icon for KDS
+import PeopleIcon from '@mui/icons-material/People'; // Icon for User Management
 
 const drawerWidth = 240;
 
 function App() {
     const { token, user, isLoading, logout } = useAuth();
-    const [view, setView] = useState(user?.role === 'SUPER_ADMIN' ? 'super' : 'orders');
+    //const [view, setView] = useState(user?.role === 'SUPER_ADMIN' ? 'super' : 'orders');
     const [mobileOpen, setMobileOpen] = useState(false);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md')); // Check for medium screens and down
 
+    const rolesConfig = {
+        SUPER_ADMIN: {
+            views: { super: <SuperAdminDashboard /> },
+            navItems: [{ text: 'Admin Panel', view: 'super', icon: <SupervisedUserCircleIcon /> }],
+            defaultView: 'super'
+        },
+        ADMIN: {
+            views: {
+                orders: <OrderDashboard />, kds: <KdsView />, analytics: <AnalyticsPage />,
+                menu: <MenuManagement />, category: <CategoryManagement />, specials: <SpecialsManagement />,
+                reservations: <ReservationManagement />, users: <UserManagement />, settings: <SettingsPage />
+            },
+            navItems: [
+                { text: 'Live Orders', view: 'orders', icon: <DashboardIcon /> },
+                { text: 'Kitchen View', view: 'kds', icon: <DvrIcon /> },
+                { text: 'Analytics', view: 'analytics', icon: <BarChartIcon /> },
+                { text: 'Menu Management', view: 'menu', icon: <RestaurantMenuIcon /> },
+                { text: 'Category Management', view: 'category', icon: <CategoryIcon /> },
+                { text: 'Specials', view: 'specials', icon: <StarIcon /> },
+                { text: 'Reservations', view: 'reservations', icon: <EventSeatIcon /> },
+                { text: 'User Management', view: 'users', icon: <PeopleIcon /> },
+                { text: 'Settings', view: 'settings', icon: <SettingsIcon /> }
+            ],
+            defaultView: 'orders'
+        },
+        KITCHEN_STAFF: {
+            views: { kds: <KdsView /> },
+            navItems: [{ text: 'Kitchen View', view: 'kds', icon: <DvrIcon /> }],
+            defaultView: 'kds'
+        }
+    };
+
+    // Determine the current user's config
+    const currentRole = user?.role || 'GUEST'; // Fallback for safety
+    const config = rolesConfig[currentRole] || { views: {}, navItems: [], defaultView: '' };
+
+    const [view, setView] = useState(config.defaultView);
+
+    // When the user changes, reset the view to their role's default
+    useEffect(() => {
+        if (user) {
+            setView(rolesConfig[user.role]?.defaultView);
+        }
+    }, [user]);
+    
     if (isLoading) {
         return <div>Loading Application...</div>;
     }
@@ -52,15 +101,21 @@ function App() {
         setMobileOpen(!mobileOpen);
     };
 
-    const isSuperAdmin = user && user.role === 'SUPER_ADMIN';
+    const currentViewTitle = config.navItems.find(item => item.view === view)?.text;
+
+    /*const isSuperAdmin = user && user.role === 'SUPER_ADMIN';
+    const isAdmin = user && user.role === 'ADMIN';
+    const isKitchenStaff = user && user.role === 'KITCHEN_STAFF';
 
     const adminNavItems = [
         { text: 'Live Orders', view: 'orders', icon: <DashboardIcon /> },
+        { text: 'Kitchen View', view: 'kds', icon: <DvrIcon /> },
         { text: 'Analytics', view: 'analytics', icon: <BarChartIcon /> },
         { text: 'Menu Management', view: 'menu', icon: <RestaurantMenuIcon /> },
         { text: 'Category Management', view: 'category', icon: <CategoryIcon /> },
         { text: 'Specials', view: 'specials', icon: <StarIcon /> },
         { text: 'Reservations', view: 'reservations', icon: <EventSeatIcon /> },
+        { text: 'User Management', view: 'users', icon: <PeopleIcon /> },
         { text: 'Settings', view: 'settings', icon: <SettingsIcon /> },
     ];
 
@@ -69,44 +124,20 @@ function App() {
     ];
 
     const currentNavItems = isSuperAdmin ? superAdminNavItems : adminNavItems;
-    const currentViewTitle = currentNavItems.find(item => item.view === view)?.text;
+    const currentViewTitle = currentNavItems.find(item => item.view === view)?.text;*/
 
     const drawerContent = (
         <div>
             <Toolbar sx={{ backgroundColor: '#222', display: 'flex', justifyContent: 'center' }}>
-                <Box sx={{ p: 1, textAlign: 'center' }}>
-                    
-                    {/* Show logo if it exists, otherwise show name */}
-                    {user?.logoUrl ? (
-                        <Box
-                            component="img"
-                            src={user.logoUrl}
-                            alt={`${user.restaurantName} logo`}
-                            sx={{
-                                maxHeight: 60,
-                                maxWidth: '100%',
-                                p: 1,
-                                backgroundColor: 'white', // Add a white background for visibility
-                                borderRadius: 2
-                            }}
-                        />
-                    ) : (
-                        <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>
-                            {isSuperAdmin ? 'Tablo' : user?.restaurantName}
-                        </Typography>
-                    )}
-
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'block', mt: 1 }}>
-                        {isSuperAdmin ? 'Super Admin' : 'Restaurant Management'}
-                    </Typography>
-                </Box>
+                <Typography variant="h5">{user?.restaurantName || 'Tablo'}</Typography>
             </Toolbar>
-            <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)' }} />
+            <Divider />
             <List>
-                {currentNavItems.map((item) => (
+                {/* ✅ The nav items are now dynamically generated based on role */}
+                {config.navItems.map((item) => (
                     <ListItem key={item.text} disablePadding>
                         <ListItemButton selected={view === item.view} onClick={() => { setView(item.view); if(isMobile) handleDrawerToggle(); }}>
-                            <ListItemIcon sx={{ color: 'white' }}>{item.icon}</ListItemIcon>
+                            <ListItemIcon>{item.icon}</ListItemIcon>
                             <ListItemText primary={item.text} />
                         </ListItemButton>
                     </ListItem>
@@ -175,20 +206,11 @@ function App() {
                     {drawerContent}
                 </Drawer>
             </Box>
-            <Box
-                component="main"
-                sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` } }}
-            >
-                <Toolbar sx={{ display: { md: 'none' } }} /> {/* Spacer for the top app bar */}
-                
-                {isSuperAdmin && <SuperAdminDashboard />}
-                {!isSuperAdmin && view === 'orders' && <OrderDashboard />}
-                {!isSuperAdmin && view === 'menu' && <MenuManagement />}
-                {!isSuperAdmin && view === 'reservations' && <ReservationManagement />}
-                {!isSuperAdmin && view === 'specials' && <SpecialsManagement />}
-                {!isSuperAdmin && view === 'settings' && <SettingsPage />}
-                {!isSuperAdmin && view === 'category' && <CategoryManagement />}
-                {!isSuperAdmin && view === 'analytics' && <AnalyticsPage />}
+            <Box component="main"
+                sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` } }}>
+                <Toolbar sx={{ display: { md: 'none' } }} />
+                {/* ✅ The view is now rendered from the config object */}
+                {config.views[view]}
             </Box>
         </Box>
     );
