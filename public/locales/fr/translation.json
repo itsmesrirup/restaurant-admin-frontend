@@ -181,5 +181,16 @@
   "failedToCreateUser": "Échec de la création de l'utilisateur.",
   "deletingUser": "Suppression de l'utilisateur...",
   "userDeleted": "Utilisateur supprimé !",
-  "failedToDeleteUser": "Échec de la suppression de l'utilisateur."
+  "failedToDeleteUser": "Échec de la suppression de l'utilisateur.",
+  "copy": "Copier",
+  "confirmDeleteMenu": "Êtes-vous sûr de vouloir supprimer ce menu spécial et tous ses articles ?",
+  "deletingMenu": "Suppression du menu...",
+  "menuDeleted": "Menu supprimé !",
+  "failedToDeleteMenu": "Échec de la suppression du menu.",
+  "cloneMenuTitle": "Cloner le Menu Spécial",
+  "newMenuTitle": "Titre du Nouveau Menu",
+  "confirmClone": "Cloner le Menu",
+  "cloningMenu": "Clonage du menu...",
+  "menuClonedSuccess": "Le menu et tous ses articles ont été clonés avec succès !",
+  "failedToCloneMenu": "Échec du clonage du menu."
 }

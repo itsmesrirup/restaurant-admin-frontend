@@ -8,7 +8,9 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useTranslation } from 'react-i18next';
+import CloneMenuModal from './CloneMenuModal';
 
 const INITIAL_MENU_FORM_STATE = { title: '', subtitle: '', startDate: '', endDate: '', isActive: true };
 const INITIAL_ITEM_FORM_STATE = { dayTitle: '', name: '', description: '' };
@@ -23,6 +25,9 @@ function SpecialsManagement() {
     const [editingMenuId, setEditingMenuId] = useState(null);
     const [editingItemId, setEditingItemId] = useState(null); 
     const [isLoading, setIsLoading] = useState(true);
+    // --- ADDED: State for the clone modal ---
+    const [cloneModalOpen, setCloneModalOpen] = useState(false);
+    const [menuToClone, setMenuToClone] = useState(null);
 
     const sortItemsByDay = (items = []) => {
         const dayOrder = { "LUNDI": 1, "MARDI": 2, "MERCREDI": 3, "JEUDI": 4, "VENDREDI": 5, "SAMEDI": 6, "DIMANCHE": 7 };
@@ -88,6 +93,44 @@ function SpecialsManagement() {
                 return editingMenuId ? 'Menu updated!' : 'Menu created!';
             },
             error: (err) => err.message || 'Failed to save menu.'
+        });
+    };
+
+    // --- This handler now opens the modal ---
+    const handleCopyMenu = (menu) => {
+        setMenuToClone(menu);
+        setCloneModalOpen(true);
+    };
+
+    // --- New handler to process the cloning after modal confirmation ---
+    const handleConfirmClone = (cloneData) => {
+        if (!menuToClone) return;
+
+        const promise = apiClient.post(`/api/special-menus/${menuToClone.id}/clone`, cloneData);
+
+        toast.promise(promise, {
+            loading: t('cloningMenu'),
+            success: () => {
+                setCloneModalOpen(false);
+                fetchSpecialMenus(); // Refresh the list
+                return t('menuClonedSuccess');
+            },
+            error: (err) => err.message || t('failedToCloneMenu')
+        });
+    };
+
+    // --- New handler for deleting an entire special menu ---
+    const handleDeleteMenu = (menuId) => {
+        if (!window.confirm(t("confirmDeleteMenu"))) return;
+
+        const promise = apiClient.delete(`/api/special-menus/${menuId}`);
+        toast.promise(promise, {
+            loading: t('deletingMenu'),
+            success: () => {
+                fetchSpecialMenus(); // Refresh the list from the server
+                return t('menuDeleted');
+            },
+            error: (err) => err.message || t('failedToDeleteMenu')
         });
     };
 
@@ -214,8 +257,14 @@ function SpecialsManagement() {
                                     </Grid>
                                     <Grid item xs={12} sm="auto" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                                         <Chip label={status.text} color={status.color} size="small" />
+                                        <IconButton aria-label={t('copy')} title={t('copy')} onClick={() => handleCopyMenu(menu)}>
+                                            <ContentCopyIcon />
+                                        </IconButton>
                                         <IconButton aria-label="edit" onClick={() => handleEditMenu(menu)}>
                                             <EditIcon />
+                                        </IconButton>
+                                        <IconButton aria-label={t('delete')} title={t('delete')} onClick={() => handleDeleteMenu(menu.id)} color="error">
+                                            <DeleteIcon />
                                         </IconButton>
                                         <Button 
                                             size="small" 
@@ -288,6 +337,12 @@ function SpecialsManagement() {
                     </Grid>
                 </Grid>
             </Paper>
+            <CloneMenuModal
+                open={cloneModalOpen}
+                onClose={() => setCloneModalOpen(false)}
+                menuToClone={menuToClone}
+                onConfirm={handleConfirmClone}
+            />
         </Box>
     );
 }
