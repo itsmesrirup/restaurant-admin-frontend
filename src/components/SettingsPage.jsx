@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { Switch, FormControlLabel, TextField, Button, Paper, Typography, Box, Grid, CircularProgress } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 function SettingsPage() {
     const { user } = useAuth();
+    const { t } = useTranslation();
     // Initialize state with all possible fields to prevent runtime errors
     const [settings, setSettings] = useState({
         name: '',
@@ -73,60 +75,60 @@ function SettingsPage() {
     };
     
     if (isLoading) {
-        return <p>Loading settings...</p>;
+        return <p>{t('loadingSettings')}</p>;
     }
 
     return (
         <Paper sx={{ p: 3, maxWidth: '800px', margin: 'auto' }}>
-            <Typography variant="h5" gutterBottom>Restaurant Settings</Typography>
+            <Typography variant="h5" gutterBottom>{t('settingsTitle')}</Typography>
             
             <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                    <TextField label="Restaurant Name" name="name" value={settings.name} onChange={handleInputChange} fullWidth margin="normal" />
+                    <TextField label={t('restaurantName')} name="name" value={settings.name} onChange={handleInputChange} fullWidth margin="normal" />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                    <TextField label="Address" name="address" value={settings.address} onChange={handleInputChange} fullWidth margin="normal" />
+                    <TextField label={t('address')} name="address" value={settings.address} onChange={handleInputChange} fullWidth margin="normal" />
                 </Grid>
                 <Grid item xs={12}>
-                    <TextField label="Contact Email for Notifications" name="email" type="email" value={settings.email} onChange={handleInputChange} fullWidth margin="normal" />
+                    <TextField label={t('contactEmail')} name="email" type="email" value={settings.email} onChange={handleInputChange} fullWidth margin="normal" />
                 </Grid>
             </Grid>
 
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Branding & Display</Typography>
+            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>{t('brandingDisplay')}</Typography>
             <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                    <TextField label="Logo Image URL" name="logoUrl" value={settings.logoUrl} onChange={handleInputChange} fullWidth margin="normal" helperText="e.g., https://example.com/logo.png" />
+                    <TextField label={t('logoUrl')} name="logoUrl" value={settings.logoUrl} onChange={handleInputChange} fullWidth margin="normal" helperText={t('logoUrlHelper')} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                    <TextField label="Decorative Menu Image URL" name="heroImageUrl" value={settings.heroImageUrl} onChange={handleInputChange} fullWidth margin="normal" helperText="Optional image for the menu page" />
+                    <TextField label={t('menuImageUrl')} name="heroImageUrl" value={settings.heroImageUrl} onChange={handleInputChange} fullWidth margin="normal" helperText={t('menuImageUrlHelper')} />
                 </Grid>
             </Grid>
 
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Feature Management</Typography>
+            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>{t('featureManagement')}</Typography>
             <Box>
                 <FormControlLabel
                     control={<Switch checked={settings.useDarkTheme} onChange={handleToggleChange} name="useDarkTheme" />}
-                    label="Use Dark Theme for Customer Page"
+                    label={t('useDarkTheme')}
                 />
                 <br/>
                 <FormControlLabel
                     control={<Switch checked={settings.reservationsEnabled} onChange={handleToggleChange} name="reservationsEnabled" />}
-                    label="Enable Online Table Reservations"
+                    label={t('enableReservations')}
                 />
                 <br />
                 <FormControlLabel
                     control={<Switch checked={settings.qrCodeOrderingEnabled} onChange={handleToggleChange} name="qrCodeOrderingEnabled" />}
-                    label="Enable QR Code Ordering"
+                    label={t('enableQrOrdering')}
                 />
                 <FormControlLabel
                     control={<Switch checked={settings.recommendationsEnabled} onChange={handleToggleChange} name="recommendationsEnabled" />}
-                    label="Enable AI-Powered Recommendations"
+                    label={t('enableRecommendations')}
                 />
             </Box>
             
             <Box sx={{ mt: 3, position: 'relative' }}>
                 <Button variant="contained" onClick={handleSave} disabled={isSaving}>
-                    Save Settings
+                    {t('saveSettings')}
                 </Button>
                 {isSaving && <CircularProgress size={24} sx={{ position: 'absolute', top: '50%', left: '50%', mt: '-12px', ml: '-40px' }} />}
             </Box>

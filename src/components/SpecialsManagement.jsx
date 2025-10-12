@@ -8,11 +8,13 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import { useTranslation } from 'react-i18next';
 
 const INITIAL_MENU_FORM_STATE = { title: '', subtitle: '', startDate: '', endDate: '', isActive: true };
 const INITIAL_ITEM_FORM_STATE = { dayTitle: '', name: '', description: '' };
 
 function SpecialsManagement() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [specialMenus, setSpecialMenus] = useState([]);
     const [selectedMenu, setSelectedMenu] = useState(null);
@@ -165,7 +167,7 @@ function SpecialsManagement() {
 
     const getMenuStatus = (menu) => {
         if (!menu.isActive) {
-            return { text: "Hidden", color: "warning" };
+            return { text: t("hidden"), color: "warning" };
         }
 
         // Create a 'today' date normalized to the start of the day in the user's time zone
@@ -180,22 +182,22 @@ function SpecialsManagement() {
         const endDate = new Date(endY, endM - 1, endD);
 
         if (today < startDate) {
-            return { text: "Upcoming", color: "info" };
+            return { text: t("upcoming"), color: "info" };
         }
         if (today > endDate) {
-            return { text: "Expired", color: "default" };
+            return { text: t("expired"), color: "default" };
         }
-        return { text: "Live Now", color: "success" };
+        return { text: t("liveNow"), color: "success" };
     };
 
     if (isLoading) return <CircularProgress />;
 
     return (
         <Box>
-            <Typography variant="h4" gutterBottom>Manage Weekly Specials</Typography>
+            <Typography variant="h4" gutterBottom>{t('manageSpecialsTitle')}</Typography>
 
             <Paper sx={{ p: 2, mb: 3 }}>
-                <Typography variant="h6">Your Special Menus</Typography>
+                <Typography variant="h6">{t('yourSpecialMenus')}</Typography>
                 <Box>
                     {specialMenus.map(menu => {
                         const status = getMenuStatus(menu);
@@ -207,7 +209,7 @@ function SpecialsManagement() {
                                     <Grid item xs={12} sm>
                                         <ListItemText 
                                             primary={menu.title} 
-                                            secondary={`Active from ${menu.startDate} to ${menu.endDate}`} 
+                                            secondary={t('activeFromTo', { start: menu.startDate, end: menu.endDate })} 
                                         />
                                     </Grid>
                                     <Grid item xs={12} sm="auto" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -220,7 +222,7 @@ function SpecialsManagement() {
                                             variant={selectedMenu?.id === menu.id ? "outlined" : "contained"} 
                                             onClick={() => setSelectedMenu(menu)}
                                         >
-                                            Manage Items
+                                            {t('manageItems')}
                                         </Button>
                                     </Grid>
                                 </Grid>
@@ -233,19 +235,19 @@ function SpecialsManagement() {
             {selectedMenu && (
                 <Paper sx={{ p: 2, mb: 3 }} elevation={3}>
                     <Typography variant="h6">
-                        {editingItemId ? 'Edit Item for' : 'Manage Items for'} "{selectedMenu.title}"
+                        {editingItemId ? t('editItemFor') : t('manageItemsFor')} "{selectedMenu.title}"
                     </Typography>
                     {/* UPDATED FORM that now handles both Add and Edit */}
                     <Box component="form" onSubmit={handleSaveItem} sx={{ my: 2 }}>
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={4}><TextField label="Day Title (e.g., Lundi)" name="dayTitle" value={itemFormData.dayTitle} onChange={handleItemFormChange} fullWidth required /></Grid>
-                            <Grid item xs={12} sm={8}><TextField label="Dish Name" name="name" value={itemFormData.name} onChange={handleItemFormChange} fullWidth required /></Grid>
-                            <Grid item xs={12}><TextField label="Description" name="description" value={itemFormData.description} onChange={handleItemFormChange} fullWidth multiline rows={2} /></Grid>
+                            <Grid item xs={12} sm={4}><TextField label={t('dayTitle')} name="dayTitle" value={itemFormData.dayTitle} onChange={handleItemFormChange} fullWidth required /></Grid>
+                            <Grid item xs={12} sm={8}><TextField label={t('dishName')} name="name" value={itemFormData.name} onChange={handleItemFormChange} fullWidth required /></Grid>
+                            <Grid item xs={12}><TextField label={t('description')} name="description" value={itemFormData.description} onChange={handleItemFormChange} fullWidth multiline rows={2} /></Grid>
                             <Grid item xs={12}>
                                 <Button type="submit" variant="outlined">
-                                    {editingItemId ? 'Update This Item' : 'Add Item to This Menu'}
+                                    {editingItemId ? t('updateThisItem') : t('addItemToMenu')}
                                 </Button>
-                                {editingItemId && <Button onClick={() => { setEditingItemId(null); setItemFormData(INITIAL_ITEM_FORM_STATE); }} sx={{ ml: 1 }}>Cancel Edit</Button>}
+                                {editingItemId && <Button onClick={() => { setEditingItemId(null); setItemFormData(INITIAL_ITEM_FORM_STATE); }} sx={{ ml: 1 }}>{t('cancelEdit')}</Button>}
                             </Grid>
                         </Grid>
                     </Box>
@@ -266,23 +268,23 @@ function SpecialsManagement() {
             )}
 
             <Paper component="form" onSubmit={handleSaveMenu} sx={{ p: 2, mt: 4 }}>
-                <Typography variant="h6">{editingMenuId ? 'Edit Special Menu' : 'Create New Special Menu'}</Typography>
+                <Typography variant="h6">{editingMenuId ? t('editSpecialMenu') : t('createSpecialMenu')}</Typography>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid item xs={12} sm={6}><TextField label="Title (e.g., Plats du Jour)" name="title" value={menuFormData.title} onChange={handleMenuFormChange} fullWidth required /></Grid>
-                    <Grid item xs={12} sm={6}><TextField label="Subtitle (optional)" name="subtitle" value={menuFormData.subtitle} onChange={handleMenuFormChange} fullWidth /></Grid>
-                    <Grid item xs={12} sm={6}><TextField label="Start Date" name="startDate" type="date" value={menuFormData.startDate} onChange={handleMenuFormChange} fullWidth required InputLabelProps={{ shrink: true }} /></Grid>
-                    <Grid item xs={12} sm={6}><TextField label="End Date" name="endDate" type="date" value={menuFormData.endDate} onChange={handleMenuFormChange} fullWidth required InputLabelProps={{ shrink: true }} /></Grid>
+                    <Grid item xs={12} sm={6}><TextField label={t('titleExample')} name="title" value={menuFormData.title} onChange={handleMenuFormChange} fullWidth required /></Grid>
+                    <Grid item xs={12} sm={6}><TextField label={t('subtitleOptional')} name="subtitle" value={menuFormData.subtitle} onChange={handleMenuFormChange} fullWidth /></Grid>
+                    <Grid item xs={12} sm={6}><TextField label={t('startDate')} name="startDate" type="date" value={menuFormData.startDate} onChange={handleMenuFormChange} fullWidth required InputLabelProps={{ shrink: true }} /></Grid>
+                    <Grid item xs={12} sm={6}><TextField label={t('endDate')} name="endDate" type="date" value={menuFormData.endDate} onChange={handleMenuFormChange} fullWidth required InputLabelProps={{ shrink: true }} /></Grid>
                     <Grid item xs={12}>
-                        <FormControlLabel 
-                            control={<Switch checked={menuFormData.isActive} onChange={handleMenuFormChange} name="isActive" />} 
-                            label="Set this menu as active and visible to customers" 
+                        <FormControlLabel
+                            control={<Switch checked={menuFormData.isActive} onChange={handleMenuFormChange} name="isActive" />}
+                            label={t('setMenuAsActive')}
                         />
                     </Grid>
                     <Grid item xs={12}>
                         <Button type="submit" variant="contained">
-                            {editingMenuId ? 'Save Changes' : 'Create Menu'}
+                            {editingMenuId ? t('saveChanges') : t('createMenu')}
                         </Button>
-                        {editingMenuId && <Button onClick={() => { setEditingMenuId(null); setMenuFormData(INITIAL_MENU_FORM_STATE); }} sx={{ ml: 1 }}>Cancel Edit</Button>}
+                        {editingMenuId && <Button onClick={() => { setEditingMenuId(null); setMenuFormData(INITIAL_MENU_FORM_STATE); }} sx={{ ml: 1 }}>{t('cancelEdit')}</Button>}
                     </Grid>
                 </Grid>
             </Paper>

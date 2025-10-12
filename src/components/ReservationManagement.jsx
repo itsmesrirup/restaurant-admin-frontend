@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext'; // ✅ Import apiClient
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 function ReservationManagement() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [reservations, setReservations] = useState([]);
     const [isFetching, setIsFetching] = useState(true);
@@ -15,7 +17,7 @@ function ReservationManagement() {
             data.sort((a, b) => new Date(b.reservationTime) - new Date(a.reservationTime));
             setReservations(data);
         } catch (error) {
-            toast.error("Failed to load reservations.");
+            toast.error(t("failedToLoadReservations"));
         } finally {
             setIsFetching(false);
         }
@@ -28,36 +30,36 @@ function ReservationManagement() {
     const handleUpdateStatus = (reservationId, status) => {
         const promise = apiClient.patch(`/api/reservations/${reservationId}/status`, { status }); // ✅ Use apiClient
         toast.promise(promise, {
-            loading: 'Updating status...',
+            loading: t('updatingStatus'),
             success: () => {
                 fetchReservations();
-                return 'Reservation updated!';
+                return t('reservationUpdated');
             },
-            error: 'Could not update reservation.'
+            error: t('couldNotUpdateReservation')
         });
     };
     
-    if (!user || isFetching) return <p>Loading reservations...</p>;
+    if (!user || isFetching) return <p>{t('loadingReservations')}</p>;
 
     return (
         // ... The rest of the JSX is the same and correct
         <div>
-            <h2>Reservation Management for {user.restaurantName}</h2>
+            <h2>{t('reservationsTitle', { restaurantName: user.restaurantName })}</h2>
             {reservations.length === 0 ? (
-                <p>You have no pending or confirmed reservations.</p>
+                <p>{t('noReservations')}</p>
             ) : (
                 reservations.map(res => (
                     <div key={res.id} style={{ border: '1px solid #ccc', padding: '1rem', margin: '1rem 0', borderRadius: '8px' }}>
-                        <p><strong>Status:</strong> {res.status}</p>
-                        <p><strong>Date:</strong> {new Date(res.reservationTime).toLocaleString()}</p>
-                        <p><strong>Name:</strong> {res.customerName}</p>
-                        <p><strong>Party Size:</strong> {res.partySize}</p>
-                        <p><strong>Email:</strong> {res.customerEmail}</p>
-                        <p><strong>Phone:</strong> {res.customerPhone}</p>
+                        <p><strong>{t('reservationStatus')}</strong> {t(`reservationStatusValues.${res.status}`, { defaultValue: res.status })}</p>
+                        <p><strong>{t('reservationDate')}</strong> {new Date(res.reservationTime).toLocaleString()}</p>
+                        <p><strong>{t('reservationName')}</strong> {res.customerName}</p>
+                        <p><strong>{t('reservationPartySize')}</strong> {res.partySize}</p>
+                        <p><strong>{t('reservationEmail')}</strong> {res.customerEmail}</p>
+                        <p><strong>{t('reservationPhone')}</strong> {res.customerPhone}</p>
                         {res.status === 'PENDING' && (
                             <div>
-                                <button onClick={() => handleUpdateStatus(res.id, 'CONFIRMED')}>Confirm</button>
-                                <button onClick={() => handleUpdateStatus(res.id, 'CANCELLED')}>Cancel</button>
+                                <button onClick={() => handleUpdateStatus(res.id, 'CONFIRMED')}>{t('confirm')}</button>
+                                <button onClick={() => handleUpdateStatus(res.id, 'CANCELLED')}>{t('cancel')}</button>
                             </div>
                         )}
                     </div>

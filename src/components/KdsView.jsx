@@ -4,8 +4,10 @@ import { toast } from 'react-hot-toast';
 import { Box, Typography, Button, Paper, Grid, CircularProgress, Chip, Divider } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import notificationSound from '/notification.mp3'; 
+import { useTranslation } from 'react-i18next';
 
 function KdsView() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -64,9 +66,9 @@ function KdsView() {
 
     return (
         <Box>
-            <Typography variant="h4" gutterBottom>Kitchen Display</Typography>
+            <Typography variant="h4" gutterBottom>{t('kitchenDisplayTitle')}</Typography>
             {orders.length === 0 ? (
-                <Typography>No active orders to prepare.</Typography>
+                <Typography>{t('noActiveOrders')}</Typography>
             ) : (
                 <Grid container spacing={2}>
                     {orders.map(order => (
@@ -79,8 +81,8 @@ function KdsView() {
                                 }}
                             >
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography variant="h5" fontWeight="bold">Order #{order.id}</Typography>
-                                    {order.tableNumber && <Chip label={`Table ${order.tableNumber}`} color="secondary" />}
+                                    <Typography variant="h5" fontWeight="bold">{t('orderNum', { orderId: order.id })}</Typography>
+                                    {order.tableNumber && <Chip label={t('tableNum', { tableNumber: order.tableNumber })} color="secondary" />}
                                 </Box>
                                 <Divider sx={{ my: 1 }} />
                                 <Box component="ul" sx={{ listStyle: 'none', p: 0, my: 2 }}>
@@ -101,13 +103,13 @@ function KdsView() {
                                 </Box>
                                 <Box sx={{ mt: 'auto', pt: 2 }}>
                                     {order.status === 'CONFIRMED' && (
-                                        <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>Start Preparing</Button>
+                                        <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('startPreparing')}</Button>
                                     )}
                                     {order.status === 'PENDING' && (
-                                        <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>Accept & Prepare</Button>
+                                        <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('acceptAndPrepare')}</Button>
                                     )}
                                     {order.status === 'PREPARING' && (
-                                        <Button fullWidth variant="contained" color="success" startIcon={<CheckCircleIcon />} onClick={() => handleUpdateStatus(order.id, 'READY_FOR_PICKUP')}>Mark as Ready</Button>
+                                        <Button fullWidth variant="contained" color="success" startIcon={<CheckCircleIcon />} onClick={() => handleUpdateStatus(order.id, 'READY_FOR_PICKUP')}>{t('markAsReady')}</Button>
                                     )}
                                 </Box>
                             </Paper>

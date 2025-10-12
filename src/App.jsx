@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './components/LoginPage';
 import OrderDashboard from './components/OrderDashboard';
@@ -32,7 +33,35 @@ import PeopleIcon from '@mui/icons-material/People'; // Icon for User Management
 
 const drawerWidth = 240;
 
+// --- Language Switcher Component ---
+// This can be a separate component file, but for simplicity, it's here.
+const LanguageSwitcher = () => {
+    const { i18n } = useTranslation();
+
+    return (
+        <Box>
+            <Button 
+                variant={i18n.language === 'en' ? 'contained' : 'outlined'} 
+                onClick={() => i18n.changeLanguage('en')}
+                size="small"
+                sx={{ color: 'white', borderColor: 'rgba(255, 255, 255, 0.5)' }}
+            >
+                EN
+            </Button>
+            <Button 
+                variant={i18n.language === 'fr' ? 'contained' : 'outlined'} 
+                onClick={() => i18n.changeLanguage('fr')}
+                size="small"
+                sx={{ ml: 1, color: 'white', borderColor: 'rgba(255, 255, 255, 0.5)' }}
+            >
+                FR
+            </Button>
+        </Box>
+    );
+};
+
 function App() {
+    const { t } = useTranslation();
     const { token, user, isLoading, logout } = useAuth();
     //const [view, setView] = useState(user?.role === 'SUPER_ADMIN' ? 'super' : 'orders');
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -42,7 +71,7 @@ function App() {
     const rolesConfig = {
         SUPER_ADMIN: {
             views: { super: <SuperAdminDashboard /> },
-            navItems: [{ text: 'Admin Panel', view: 'super', icon: <SupervisedUserCircleIcon /> }],
+            navItems: [{ textKey: 'adminPanel', view: 'super', icon: <SupervisedUserCircleIcon /> }],
             defaultView: 'super'
         },
         ADMIN: {
@@ -52,21 +81,21 @@ function App() {
                 reservations: <ReservationManagement />, users: <UserManagement />, settings: <SettingsPage />
             },
             navItems: [
-                { text: 'Live Orders', view: 'orders', icon: <DashboardIcon /> },
-                { text: 'Kitchen View', view: 'kds', icon: <DvrIcon /> },
-                { text: 'Analytics', view: 'analytics', icon: <BarChartIcon /> },
-                { text: 'Menu Management', view: 'menu', icon: <RestaurantMenuIcon /> },
-                { text: 'Category Management', view: 'category', icon: <CategoryIcon /> },
-                { text: 'Specials', view: 'specials', icon: <StarIcon /> },
-                { text: 'Reservations', view: 'reservations', icon: <EventSeatIcon /> },
-                { text: 'User Management', view: 'users', icon: <PeopleIcon /> },
-                { text: 'Settings', view: 'settings', icon: <SettingsIcon /> }
+                { textKey: 'liveOrders', view: 'orders', icon: <DashboardIcon /> },
+                { textKey: 'kitchenView', view: 'kds', icon: <DvrIcon /> },
+                { textKey: 'analytics', view: 'analytics', icon: <BarChartIcon /> },
+                { textKey: 'menuManagement', view: 'menu', icon: <RestaurantMenuIcon /> },
+                { textKey: 'categoryManagement', view: 'category', icon: <CategoryIcon /> },
+                { textKey: 'specials', view: 'specials', icon: <StarIcon /> },
+                { textKey: 'reservations', view: 'reservations', icon: <EventSeatIcon /> },
+                { textKey: 'userManagement', view: 'users', icon: <PeopleIcon /> },
+                { textKey: 'settings', view: 'settings', icon: <SettingsIcon /> }
             ],
             defaultView: 'orders'
         },
         KITCHEN_STAFF: {
             views: { kds: <KdsView /> },
-            navItems: [{ text: 'Kitchen View', view: 'kds', icon: <DvrIcon /> }],
+            navItems: [{ textKey: 'kitchenView', view: 'kds', icon: <DvrIcon /> }],
             defaultView: 'kds'
         }
     };
@@ -85,7 +114,7 @@ function App() {
     }, [user]);
     
     if (isLoading) {
-        return <div>Loading Application...</div>;
+        return <div>{t('loadingApp', 'Loading Application...')}</div>;
     }
 
     if (!token) {
@@ -101,7 +130,7 @@ function App() {
         setMobileOpen(!mobileOpen);
     };
 
-    const currentViewTitle = config.navItems.find(item => item.view === view)?.text;
+    const currentViewTitle = t(config.navItems.find(item => item.view === view)?.textKey);
 
     /*const isSuperAdmin = user && user.role === 'SUPER_ADMIN';
     const isAdmin = user && user.role === 'ADMIN';
@@ -128,24 +157,40 @@ function App() {
 
     const drawerContent = (
         <div>
-            <Toolbar sx={{ backgroundColor: '#222', display: 'flex', justifyContent: 'center' }}>
-                <Typography variant="h5">{user?.restaurantName || 'Tablo'}</Typography>
+            {/* --- CHANGED: This Toolbar is now a vertical flex container to stack its children --- */}
+            <Toolbar sx={{ 
+                backgroundColor: '#222', 
+                flexDirection: 'column',
+                alignItems: 'center',
+                py: 2
+            }}>
+                <Typography variant="h5" sx={{ color: 'white' }}>
+                    {user?.restaurantName || 'Tablo'}
+                </Typography>
+                
+                {/* --- CHANGED: Conditionally render the switcher ONLY if it's mobile view --- */}
+                {/* This is the key fix to prevent the duplicate on desktop. */}
+                {isMobile && (
+                    <Box sx={{ mt: 1.5 }}>
+                        <LanguageSwitcher />
+                    </Box>
+                )}
             </Toolbar>
-            <Divider />
+
+            <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
             <List>
-                {/* ✅ The nav items are now dynamically generated based on role */}
                 {config.navItems.map((item) => (
-                    <ListItem key={item.text} disablePadding>
+                    <ListItem key={item.textKey} disablePadding>
                         <ListItemButton selected={view === item.view} onClick={() => { setView(item.view); if(isMobile) handleDrawerToggle(); }}>
-                            <ListItemIcon>{item.icon}</ListItemIcon>
-                            <ListItemText primary={item.text} />
+                            <ListItemIcon sx={{ color: 'white' }}>{item.icon}</ListItemIcon>
+                            <ListItemText primary={t(item.textKey)} />
                         </ListItemButton>
                     </ListItem>
                 ))}
             </List>
             <Box sx={{ position: 'absolute', bottom: 0, width: '100%', p: 2 }}>
                 <Button onClick={logout} variant="contained" fullWidth startIcon={<LogoutIcon />} color="error">
-                    Logout
+                    {t('logout')}
                 </Button>
             </Box>
         </div>
@@ -158,8 +203,7 @@ function App() {
                 position="fixed"
                 sx={{
                     width: { md: `calc(100% - ${drawerWidth}px)` },
-                    ml: { md: `${drawerWidth}px` },
-                    display: { md: 'none' } // Only display the top bar on mobile
+                    ml: { md: `${drawerWidth}px}` },
                 }}
             >
                 <Toolbar>
@@ -168,20 +212,23 @@ function App() {
                         aria-label="open drawer"
                         edge="start"
                         onClick={handleDrawerToggle}
-                        sx={{ mr: 2 }}
+                        sx={{ mr: 2, display: { md: 'none' } }}
                     >
                         <MenuIcon />
                     </IconButton>
-                    <Typography variant="h6" noWrap component="div">
+                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
                         {currentViewTitle}
                     </Typography>
+                    {/* --- REMOVED: No change needed here, it works perfectly on desktop --- */}
+                    <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                         <LanguageSwitcher />
+                    </Box>
                 </Toolbar>
             </AppBar>
             <Box
                 component="nav"
                 sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
             >
-                {/* Temporary Drawer for Mobile */}
                 <Drawer
                     variant="temporary"
                     open={mobileOpen}
@@ -194,7 +241,6 @@ function App() {
                 >
                     {drawerContent}
                 </Drawer>
-                {/* Permanent Drawer for Desktop */}
                 <Drawer
                     variant="permanent"
                     sx={{
@@ -208,8 +254,7 @@ function App() {
             </Box>
             <Box component="main"
                 sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` } }}>
-                <Toolbar sx={{ display: { md: 'none' } }} />
-                {/* ✅ The view is now rendered from the config object */}
+                <Toolbar /> {/* This Toolbar is a spacer for under the AppBar */}
                 {config.views[view]}
             </Box>
         </Box>

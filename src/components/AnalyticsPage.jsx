@@ -3,15 +3,17 @@ import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { Paper, Typography, Grid, Box, CircularProgress } from '@mui/material';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
-const StatCard = ({ title, value, prefix = '' }) => (
+const StatCard = ({ title, value, prefix = '', t }) => (
     <Paper elevation={3} sx={{ p: 2, textAlign: 'center', height: '100%' }}>
-        <Typography color="text.secondary" noWrap>{title}</Typography>
+        <Typography color="text.secondary" noWrap>{t(title)}</Typography>
         <Typography variant="h4" fontWeight="bold">{prefix}{value}</Typography>
     </Paper>
 );
 
 function AnalyticsPage() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [summary, setSummary] = useState(null);
     const [topItems, setTopItems] = useState([]);
@@ -24,7 +26,8 @@ function AnalyticsPage() {
             if (!user) return;
             setIsLoading(true);
             try {
-                const [summaryData, topItemsData] = await Promise.all([
+                // --- FIX: Correctly destructure all 4 promises ---
+                const [summaryData, topItemsData, salesChartData, hourlyChartData] = await Promise.all([
                     apiClient.get('/api/analytics/summary'),
                     apiClient.get('/api/analytics/top-selling-items'),
                     apiClient.get('/api/analytics/sales-over-time'),
@@ -32,57 +35,57 @@ function AnalyticsPage() {
                 ]);
                 setSummary(summaryData);
                 setTopItems(topItemsData.slice(0, 5));
-                setSalesData(salesData);
+                setSalesData(salesChartData); // Use correct variable
 
-                // Create a full 24-hour data set for the chart
                 const fullHourlyData = Array.from({ length: 24 }, (_, i) => ({ hour: i, orderCount: 0 }));
-                hourlyData.forEach(data => {
-                    fullHourlyData[data.hour].orderCount = data.orderCount;
+                hourlyChartData.forEach(data => { // Use correct variable
+                    if(data.hour != null) fullHourlyData[data.hour].orderCount = data.orderCount;
                 });
                 setHourlyData(fullHourlyData);
             } catch (error) {
-                toast.error("Failed to load analytics data.");
+                toast.error(t('failedToLoadAnalytics', "Failed to load analytics data."));
             } finally {
                 setIsLoading(false);
             }
         };
         fetchAnalytics();
-    }, [user]);
+    }, [user, t]);
 
-    if (isLoading) return <p>Loading analytics...</p>;
-    if (!summary) return <p>No data available to generate analytics.</p>;
+    if (isLoading) return <p>{t('loadingAnalytics')}</p>;
+    if (!summary) return <p>{t('noAnalyticsData')}</p>;
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Typography variant="h4" gutterBottom>Analytics for {user.restaurantName}</Typography>
+            {/* --- CHANGED: Use translation key for title --- */}
+            <Typography variant="h4" gutterBottom>{t('analyticsTitle', { restaurantName: user.restaurantName })}</Typography>
             
-            <Grid container spacing={2}>
+            <Grid container spacing={3}>
                 <Grid item xs={12} sm={4}>
-                    <StatCard title="Total Revenue" value={summary.totalRevenue.toFixed(2)} prefix="$" />
+                    {/* --- CHANGED: Use translation key and dynamic currency, pass t --- */}
+                    <StatCard title="totalRevenue" value={summary.totalRevenue.toFixed(2)} prefix="€" t={t} />
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                    <StatCard title="Total Orders" value={summary.totalOrders} />
+                    <StatCard title="totalOrders" value={summary.totalOrders} t={t} />
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                    <StatCard title="Average Order Value" value={summary.averageOrderValue.toFixed(2)} prefix="$" />
+                    <StatCard title="averageOrderValue" value={summary.averageOrderValue.toFixed(2)} prefix="€" t={t} />
                 </Grid>
             </Grid>
-            <Grid>
+
+            {/* --- FIX: Wrap all chart Grid items in a single Grid container --- */}
+            <Grid container spacing={3}>
                 <Grid item xs={12} lg={6}>
                     <Paper elevation={3} sx={{ p: 2, width: '100%', overflowX: 'auto' }}>
-                        <Typography variant="h6" gutterBottom>Top 5 Selling Items</Typography>
+                        <Typography variant="h6" gutterBottom>{t('top5Items')}</Typography>
                         <Box sx={{ height: 400, minWidth: '500px' }}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={topItems}
-                                    margin={{ top: 5, right: 20, left: -10, bottom: 20 }}
-                                >
+                                <BarChart data={topItems} margin={{ top: 5, right: 20, left: -10, bottom: 20 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="itemName" interval={0} angle={-30} textAnchor="end" height={60} />
                                     <YAxis />
                                     <Tooltip />
                                     <Legend />
-                                    <Bar dataKey="totalQuantitySold" fill="#8884d8" name="Quantity Sold" />
+                                    <Bar dataKey="totalQuantitySold" fill="#8884d8" name={t('quantitySold')} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </Box>
@@ -90,14 +93,14 @@ function AnalyticsPage() {
                 </Grid>
                 <Grid item xs={12} lg={6}>
                     <Paper elevation={3} sx={{ p: 2, width: '100%', overflowX: 'auto' }}>
-                        <Typography variant="h6" gutterBottom>Busiest Hours of the Day</Typography>
+                        <Typography variant="h6" gutterBottom>{t('busiestHours')}</Typography>
                         <Box sx={{ height: 400, minWidth: '500px' }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={hourlyData}>
                                     <XAxis dataKey="hour" tickFormatter={(hour) => `${hour}:00`} />
                                     <YAxis />
                                     <Tooltip />
-                                    <Bar dataKey="orderCount" fill="#82ca9d" name="Orders" />
+                                    <Bar dataKey="orderCount" fill="#82ca9d" name={t('orders')} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </Box>
@@ -105,15 +108,15 @@ function AnalyticsPage() {
                 </Grid>
                 <Grid item xs={12}>
                     <Paper elevation={3} sx={{ p: 2, width: '100%', overflowX: 'auto' }}>
-                        <Typography variant="h6" gutterBottom>Sales Over Last 30 Days</Typography>
+                        <Typography variant="h6" gutterBottom>{t('salesLast30Days')}</Typography>
                         <Box sx={{ height: 400, minWidth: '500px' }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={salesData}>
                                     <XAxis dataKey="period" />
-                                    <YAxis tickFormatter={(value) => `$${value}`} />
-                                    <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                                    <YAxis tickFormatter={(value) => `€${value}`} />
+                                    <Tooltip formatter={(value) => `€${value.toFixed(2)}`} />
                                     <Legend />
-                                    <Line type="monotone" dataKey="totalSales" stroke="#8884d8" name="Daily Sales" />
+                                    <Line type="monotone" dataKey="totalSales" stroke="#8884d8" name={t('dailySales')} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </Box>
