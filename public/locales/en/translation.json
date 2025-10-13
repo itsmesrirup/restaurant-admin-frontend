@@ -191,5 +191,7 @@
   "confirmClone": "Clone Menu",
   "cloningMenu": "Cloning menu...",
   "menuClonedSuccess": "Menu and all its items have been successfully cloned!",
-  "failedToCloneMenu": "Failed to clone menu."
+  "failedToCloneMenu": "Failed to clone menu.",
+  "upgradeToPro": "Upgrade to PRO plan to enable this feature",
+  "upgradeToPremium": "Upgrade to PREMIUM plan to enable this feature"
 }

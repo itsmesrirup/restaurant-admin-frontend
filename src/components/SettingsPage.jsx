@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Switch, FormControlLabel, TextField, Button, Paper, Typography, Box, Grid, CircularProgress } from '@mui/material';
+import { Switch, FormControlLabel, TextField, Button, Paper, Typography, Box, Grid, CircularProgress, Tooltip } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 function SettingsPage() {
@@ -78,6 +78,11 @@ function SettingsPage() {
         return <p>{t('loadingSettings')}</p>;
     }
 
+    // --- Helper variables to check for feature availability for cleaner JSX ---
+    const canUseReservations = user.availableFeatures?.includes('RESERVATIONS');
+    const canUseQrOrdering = user.availableFeatures?.includes('QR_ORDERING');
+    const canUseRecommendations = user.availableFeatures?.includes('RECOMMENDATIONS');
+
     return (
         <Paper sx={{ p: 3, maxWidth: '800px', margin: 'auto' }}>
             <Typography variant="h5" gutterBottom>{t('settingsTitle')}</Typography>
@@ -111,19 +116,59 @@ function SettingsPage() {
                     label={t('useDarkTheme')}
                 />
                 <br/>
-                <FormControlLabel
-                    control={<Switch checked={settings.reservationsEnabled} onChange={handleToggleChange} name="reservationsEnabled" />}
-                    label={t('enableReservations')}
-                />
+                <Tooltip title={!canUseReservations ? t('upgradeToPro', 'Upgrade to PRO plan to enable this feature') : ""}>
+                    {/* The outer span is necessary for the Tooltip to work on a disabled element */}
+                    <span>
+                        <FormControlLabel
+                            control={
+                                <Switch 
+                                    // The `checked` prop now respects the feature flag.
+                                    // It's only checked if the feature is available AND the setting is true.
+                                    checked={canUseReservations && settings.reservationsEnabled} 
+                                    onChange={handleToggleChange} 
+                                    name="reservationsEnabled" 
+                                />
+                            }
+                            label={t('enableReservations')}
+                            // The `disabled` prop remains the same.
+                            disabled={!canUseReservations}
+                        />
+                    </span>
+                </Tooltip>
                 <br />
-                <FormControlLabel
-                    control={<Switch checked={settings.qrCodeOrderingEnabled} onChange={handleToggleChange} name="qrCodeOrderingEnabled" />}
-                    label={t('enableQrOrdering')}
-                />
-                <FormControlLabel
-                    control={<Switch checked={settings.recommendationsEnabled} onChange={handleToggleChange} name="recommendationsEnabled" />}
-                    label={t('enableRecommendations')}
-                />
+                
+                <Tooltip title={!canUseQrOrdering ? t('upgradeToPro', 'Upgrade to PRO plan to enable this feature') : ""}>
+                    <span>
+                        <FormControlLabel
+                            control={
+                                <Switch 
+                                    checked={canUseQrOrdering && settings.qrCodeOrderingEnabled} 
+                                    onChange={handleToggleChange} 
+                                    name="qrCodeOrderingEnabled" 
+                                />
+                            }
+                            label={t('enableQrOrdering')}
+                            disabled={!canUseQrOrdering}
+                        />
+                    </span>
+                </Tooltip>
+                 <br />
+
+                <Tooltip title={!canUseRecommendations ? t('upgradeToPremium', 'Upgrade to PREMIUM plan to enable this feature') : ""}>
+                    <span>
+                        <FormControlLabel
+                            control={
+                                <Switch 
+                                    checked={canUseRecommendations && settings.recommendationsEnabled} 
+                                    onChange={handleToggleChange} 
+                                    name="recommendationsEnabled" 
+                                />
+                            }
+                            label={t('enableRecommendations')}
+                            disabled={!canUseRecommendations}
+                        />
+                    </span>
+                </Tooltip>
             </Box>
             
             <Box sx={{ mt: 3, position: 'relative' }}>

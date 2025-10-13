@@ -1,13 +1,9 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 
-// --- Centralized API Client ---
-// Get the base URL from environment variables once.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// This reusable API client can be imported and used anywhere in the app.
 export const apiClient = {
-    // A helper function to handle API responses and errors consistently.
     handleResponse: async (response) => {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred.' }));
@@ -17,12 +13,12 @@ export const apiClient = {
         if (contentType && contentType.includes("application/json")) {
             return response.json();
         }
-        return response.text(); // For DELETE requests that might not return JSON
+        return response.text();
     },
 
-    // A helper to get the current authentication headers.
     getAuthHeaders: () => {
-        const token = localStorage.getItem('token');
+        // --- FIX 1: Use the correct localStorage key 'authToken' ---
+        const token = localStorage.getItem('authToken');
         return {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -53,22 +49,32 @@ export const apiClient = {
 };
 
 // --- Auth Context Setup ---
-const AuthContext = createContext(null);
+const AuthContext = createContext();
+
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [token, setToken] = useState(localStorage.getItem('token'));
+    const [token, setToken] = useState(localStorage.getItem('authToken'));
     const [user, setUser] = useState(null);
-    const [isLoading, setIsLoading] = useState(true); // Tracks initial user fetch
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchUserOnLoad = async () => {
-            const currentToken = localStorage.getItem('token');
-            if (currentToken) {
+            if (token) {
+                // Because of FIX 1, the apiClient now sends the correct header.
                 try {
                     const userData = await apiClient.get('/api/users/me');
-                    setUser(userData);
+                    
+                    // --- FIX 3: Your apiClient returns data directly, not in a `.data` property like axios ---
+                    if (userData.role === 'SUPER_ADMIN') {
+                        setUser(userData);
+                    } else {
+                        const restaurantSettings = await apiClient.get('/api/restaurants/me');
+                        setUser({ ...userData, ...restaurantSettings });
+                    }
                 } catch (error) {
-                    console.error("Auth token is invalid, logging out:", error);
+                    console.error("Auth token is invalid, logging out:", error.message);
+                    toast.error("Session expired. Please log in again.");
                     logout();
                 }
             }
@@ -78,31 +84,42 @@ export const AuthProvider = ({ children }) => {
     }, [token]);
 
     const login = async (email, password) => {
-        // Login is a special case since it doesn't use an auth token
-        const response = await fetch(`${API_BASE_URL}/api/auth/authenticate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-        const data = await apiClient.handleResponse(response);
-        if (data.token) {
-            localStorage.setItem('token', data.token);
-            setToken(data.token); // This will trigger the useEffect to fetch the user
-            toast.success('Login successful!');
+        try {
+            // --- FIX 2: Make a direct `fetch` call for login ONLY. ---
+            // This bypasses the apiClient's automatic header injection, ensuring no old token is sent.
+            const response = await fetch(`${API_BASE_URL}/api/auth/authenticate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }, // No 'Authorization' header
+                body: JSON.stringify({ email, password })
+            });
+
+            // Use our own handleResponse logic to check for errors and parse the JSON
+            const data = await apiClient.handleResponse(response);
+            
+            const newToken = data.token;
+            localStorage.setItem('authToken', newToken);
+            
+            // Now that we have a new token, we can update the state, which will
+            // trigger the useEffect to run with the correct token.
+            setToken(newToken);
+
+        } catch (error) {
+            throw new Error(error.message || 'Login failed. Please check your credentials.');
         }
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
+        localStorage.removeItem('authToken');
         setToken(null);
         setUser(null);
+        // No need to delete from apiClient.defaults since you're not using it.
     };
 
-    const authValue = { token, user, isLoading, login, logout };
+    const value = { token, user, isLoading, login, logout };
 
-    return <AuthContext.Provider value={authValue}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = () => {
-    return useContext(AuthContext);
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    );
 };

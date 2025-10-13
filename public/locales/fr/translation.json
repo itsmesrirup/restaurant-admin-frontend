@@ -192,5 +192,7 @@
   "confirmClone": "Cloner le Menu",
   "cloningMenu": "Clonage du menu...",
   "menuClonedSuccess": "Le menu et tous ses articles ont été clonés avec succès !",
-  "failedToCloneMenu": "Échec du clonage du menu."
+  "failedToCloneMenu": "Échec du clonage du menu.",
+  "upgradeToPro": "Passez au plan PRO pour activer cette fonctionnalité",
+  "upgradeToPremium": "Passez au plan PREMIUM pour activer cette fonctionnalité"
 }

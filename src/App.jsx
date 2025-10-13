@@ -80,17 +80,17 @@ function App() {
                 menu: <MenuManagement />, category: <CategoryManagement />, specials: <SpecialsManagement />,
                 reservations: <ReservationManagement />, users: <UserManagement />, settings: <SettingsPage />
             },
-            navItems: [
-                { textKey: 'liveOrders', view: 'orders', icon: <DashboardIcon /> },
-                { textKey: 'kitchenView', view: 'kds', icon: <DvrIcon /> },
-                { textKey: 'analytics', view: 'analytics', icon: <BarChartIcon /> },
-                { textKey: 'menuManagement', view: 'menu', icon: <RestaurantMenuIcon /> },
-                { textKey: 'categoryManagement', view: 'category', icon: <CategoryIcon /> },
-                { textKey: 'specials', view: 'specials', icon: <StarIcon /> },
-                { textKey: 'reservations', view: 'reservations', icon: <EventSeatIcon /> },
-                { textKey: 'userManagement', view: 'users', icon: <PeopleIcon /> },
-                { textKey: 'settings', view: 'settings', icon: <SettingsIcon /> }
-            ],
+            navItems: (features = []) => [
+                { textKey: 'liveOrders', view: 'orders', icon: <DashboardIcon />, feature: 'ORDERS' },
+                { textKey: 'kitchenView', view: 'kds', icon: <DvrIcon />, feature: 'ORDERS' }, // KDS is part of basic ordering
+                { textKey: 'analytics', view: 'analytics', icon: <BarChartIcon />, feature: 'ANALYTICS' },
+                { textKey: 'menuManagement', view: 'menu', icon: <RestaurantMenuIcon />, feature: 'MENU' },
+                { textKey: 'categoryManagement', view: 'category', icon: <CategoryIcon />, feature: 'MENU' },
+                { textKey: 'specials', view: 'specials', icon: <StarIcon />, feature: 'MENU' },
+                { textKey: 'reservations', view: 'reservations', icon: <EventSeatIcon />, feature: 'RESERVATIONS' },
+                { textKey: 'userManagement', view: 'users', icon: <PeopleIcon />, feature: 'ORDERS' }, // User management is basic
+                { textKey: 'settings', view: 'settings', icon: <SettingsIcon />, feature: 'ORDERS' }
+            ].filter(item => features.includes(item.feature)),
             defaultView: 'orders'
         },
         KITCHEN_STAFF: {
@@ -130,7 +130,13 @@ function App() {
         setMobileOpen(!mobileOpen);
     };
 
-    const currentViewTitle = t(config.navItems.find(item => item.view === view)?.textKey);
+    // This is the variable that correctly gets the array of nav items for the current user
+    const navItems = user?.role === 'ADMIN' 
+        ? config.navItems(user.availableFeatures) 
+        : rolesConfig[user?.role]?.navItems || [];
+
+    //const currentViewTitle = t(config.navItems.find(item => item.view === view)?.textKey);
+    const currentViewTitle = t(navItems.find(item => item.view === view)?.textKey);
 
     /*const isSuperAdmin = user && user.role === 'SUPER_ADMIN';
     const isAdmin = user && user.role === 'ADMIN';
@@ -179,7 +185,7 @@ function App() {
 
             <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
             <List>
-                {config.navItems.map((item) => (
+                {navItems.map((item) => (
                     <ListItem key={item.textKey} disablePadding>
                         <ListItemButton selected={view === item.view} onClick={() => { setView(item.view); if(isMobile) handleDrawerToggle(); }}>
                             <ListItemIcon sx={{ color: 'white' }}>{item.icon}</ListItemIcon>

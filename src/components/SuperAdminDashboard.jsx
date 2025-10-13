@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Paper, Typography, Box, TextField, Button, Grid, Divider, List, ListItem, ListItemText, IconButton, CircularProgress } from '@mui/material';
+import { Paper, Typography, Box, TextField, Button, Grid, Divider, List, ListItem, ListItemText, IconButton, CircularProgress, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 function SuperAdminDashboard() {
@@ -93,6 +93,19 @@ function SuperAdminDashboard() {
         });
     };
 
+    const handlePlanChange = (restaurantId, newPlan) => {
+        const promise = apiClient.patch(`/api/restaurants/${restaurantId}/plan`, { plan: newPlan });
+        toast.promise(promise, {
+            loading: 'Updating plan...',
+            success: () => {
+                // Optimistically update the UI for an instant feel
+                setRestaurants(prev => prev.map(r => r.id === restaurantId ? { ...r, plan: newPlan } : r));
+                return 'Plan updated successfully!';
+            },
+            error: (err) => err.message || 'Failed to update plan.'
+        });
+    };
+
     return (
         <Box>
             <Typography variant="h4" gutterBottom>Super Admin Dashboard</Typography>
@@ -126,27 +139,38 @@ function SuperAdminDashboard() {
                 <List>
                     {restaurants.map(restaurant => (
                         <ListItem key={restaurant.id} divider secondaryAction={
-                            // CONDITIONAL BUTTON LOGIC
-                            restaurant.active ? (
-                                // If the restaurant is active, show the Delete button
-                                <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteRestaurant(restaurant.id)}>
-                                    <DeleteIcon color="error" />
-                                </IconButton>
-                            ) : (
-                                // If it's inactive, show the Activate button
-                                <Button 
-                                    size="small" 
-                                    variant="outlined" 
-                                    color="success" 
-                                    onClick={() => handleReactivateRestaurant(restaurant.id)}
-                                >
-                                    Reactivate
-                                </Button>
-                            )
-                        }>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <FormControl sx={{ m: 1, minWidth: 120 }} size="small">
+                                        <InputLabel>Plan</InputLabel>
+                                        <Select
+                                            value={restaurant.plan || 'BASIC'}
+                                            label="Plan"
+                                            onChange={(e) => handlePlanChange(restaurant.id, e.target.value)}
+                                        >
+                                            <MenuItem value={'BASIC'}>Basic</MenuItem>
+                                            <MenuItem value={'PRO'}>Pro</MenuItem>
+                                            <MenuItem value={'PREMIUM'}>Premium</MenuItem>
+                                        </Select>
+                                    </FormControl>
+
+                                    {restaurant.active ? (
+                                        <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteRestaurant(restaurant.id)}>
+                                            <DeleteIcon color="error" />
+                                        </IconButton>
+                                    ) : (
+                                        <Button 
+                                            size="small" 
+                                            variant="outlined" 
+                                            color="success" 
+                                            onClick={() => handleReactivateRestaurant(restaurant.id)}
+                                        >
+                                            Reactivate
+                                        </Button>
+                                    )}
+                                </Box>
+                            }>
                             <ListItemText 
                                 primary={`${restaurant.name} (ID: ${restaurant.id})`}
-                                // Dim the text for inactive restaurants
                                 sx={{ textDecoration: restaurant.active ? 'none' : 'line-through' }}
                                 secondary={restaurant.active ? 'Status: Active' : 'Status: INACTIVE/Archived'}
                             />
