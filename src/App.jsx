@@ -30,6 +30,11 @@ import StarIcon from '@mui/icons-material/Star';
 import KdsView from './components/KdsView'; 
 import DvrIcon from '@mui/icons-material/Dvr'; // Icon for KDS
 import PeopleIcon from '@mui/icons-material/People'; // Icon for User Management
+import GlobeIcon from '@mui/icons-material/Language'; // Icon for Website
+import WebsitePage from './components/WebsitePage';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'; // New Icon
+import CommissionPage from './components/CommissionPage';
+import SuperAdminCommissionReport from './components/SuperAdminCommissionReport';
 
 const drawerWidth = 240;
 
@@ -70,27 +75,47 @@ function App() {
 
     const rolesConfig = {
         SUPER_ADMIN: {
-            views: { super: <SuperAdminDashboard /> },
-            navItems: [{ textKey: 'adminPanel', view: 'super', icon: <SupervisedUserCircleIcon /> }],
+            views: { 
+                super: <SuperAdminDashboard />,
+                commissions: <SuperAdminCommissionReport />
+             },
+            navItems: [
+                { textKey: 'adminPanel', view: 'super', icon: <SupervisedUserCircleIcon /> },
+                { textKey: 'globalCommissions', view: 'commissions', icon: <MonetizationOnIcon /> }
+            ],
             defaultView: 'super'
         },
         ADMIN: {
             views: {
                 orders: <OrderDashboard />, kds: <KdsView />, analytics: <AnalyticsPage />,
                 menu: <MenuManagement />, category: <CategoryManagement />, specials: <SpecialsManagement />,
-                reservations: <ReservationManagement />, users: <UserManagement />, settings: <SettingsPage />
+                reservations: <ReservationManagement />, users: <UserManagement />, website: <WebsitePage />, settings: <SettingsPage />,
+                commissions: <CommissionPage />
             },
-            navItems: (features = []) => [
-                { textKey: 'liveOrders', view: 'orders', icon: <DashboardIcon />, feature: 'ORDERS' },
-                { textKey: 'kitchenView', view: 'kds', icon: <DvrIcon />, feature: 'ORDERS' }, // KDS is part of basic ordering
-                { textKey: 'analytics', view: 'analytics', icon: <BarChartIcon />, feature: 'ANALYTICS' },
-                { textKey: 'menuManagement', view: 'menu', icon: <RestaurantMenuIcon />, feature: 'MENU' },
-                { textKey: 'categoryManagement', view: 'category', icon: <CategoryIcon />, feature: 'MENU' },
-                { textKey: 'specials', view: 'specials', icon: <StarIcon />, feature: 'MENU' },
-                { textKey: 'reservations', view: 'reservations', icon: <EventSeatIcon />, feature: 'RESERVATIONS' },
-                { textKey: 'userManagement', view: 'users', icon: <PeopleIcon />, feature: 'ORDERS' }, // User management is basic
-                { textKey: 'settings', view: 'settings', icon: <SettingsIcon />, feature: 'ORDERS' }
-            ].filter(item => features.includes(item.feature)),
+            navItems: (user = {}) => {
+                const features = user.availableFeatures || [];
+                const model = user.paymentModel;
+
+                return [
+                    { textKey: 'liveOrders', view: 'orders', icon: <DashboardIcon />, feature: 'ORDERS' },
+                    { textKey: 'kitchenView', view: 'kds', icon: <DvrIcon />, feature: 'ORDERS' },
+                    { textKey: 'analytics', view: 'analytics', icon: <BarChartIcon />, feature: 'ANALYTICS' },
+                    { textKey: 'menuManagement', view: 'menu', icon: <RestaurantMenuIcon />, feature: 'MENU' },
+                    { textKey: 'categoryManagement', view: 'category', icon: <CategoryIcon />, feature: 'MENU' },
+                    { textKey: 'specials', view: 'specials', icon: <StarIcon />, feature: 'MENU' },
+                    { textKey: 'reservations', view: 'reservations', icon: <EventSeatIcon />, feature: 'RESERVATIONS' },
+                    { textKey: 'userManagement', view: 'users', icon: <PeopleIcon />, feature: 'ORDERS' },
+                    { textKey: 'websitePage', view: 'website', icon: <GlobeIcon />, feature: 'WEBSITE_BUILDER' },
+                    // --- ADDED: This item is specific to the COMMISSION model ---
+                    { textKey: 'commissions', view: 'commissions', icon: <MonetizationOnIcon />, feature: 'ORDERS', model: 'COMMISSION' },
+                    { textKey: 'settings', view: 'settings', icon: <SettingsIcon />, feature: 'ORDERS' }
+                ].filter(item => 
+                    // An item is shown if:
+                    // 1. The user's plan has the required feature AND
+                    // 2. The item either has no specific model, OR its model matches the user's payment model.
+                    features.includes(item.feature) && (!item.model || item.model === model)
+                );
+            },
             defaultView: 'orders'
         },
         KITCHEN_STAFF: {
@@ -132,7 +157,7 @@ function App() {
 
     // This is the variable that correctly gets the array of nav items for the current user
     const navItems = user?.role === 'ADMIN' 
-        ? config.navItems(user.availableFeatures) 
+        ? config.navItems(user) 
         : rolesConfig[user?.role]?.navItems || [];
 
     //const currentViewTitle = t(config.navItems.find(item => item.view === view)?.textKey);

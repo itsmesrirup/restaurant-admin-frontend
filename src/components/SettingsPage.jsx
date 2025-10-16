@@ -8,73 +8,47 @@ function SettingsPage() {
     const { user } = useAuth();
     const { t } = useTranslation();
     // Initialize state with all possible fields to prevent runtime errors
-    const [settings, setSettings] = useState({
-        name: '',
-        address: '',
-        email: '',
-        reservationsEnabled: false,
-        qrCodeOrderingEnabled: false,
-        recommendationsEnabled: false,
-        useDarkTheme: false,
-        logoUrl: '',
-        heroImageUrl: '',
-        // Add other theme color fields here if you decide to bring them back
-        // themePrimaryColor: '', 
-        // themeSecondaryColor: '',
-    });
+    const [fullSettings, setFullSettings] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
-    const fetchSettings = useCallback(async () => {
+    const fetchAllSettings = useCallback(async () => {
         if (!user) return;
         setIsLoading(true);
         try {
-            // This endpoint fetches the current restaurant's full details
             const data = await apiClient.get('/api/restaurants/me');
-            // Ensure all fields have a value to avoid "uncontrolled component" warnings
-            setSettings({
-                name: data.name || '',
-                address: data.address || '',
-                email: data.email || '',
-                reservationsEnabled: data.reservationsEnabled || false,
-                qrCodeOrderingEnabled: data.qrCodeOrderingEnabled || false,
-                recommendationsEnabled: data.recommendationsEnabled || false,
-                useDarkTheme: data.useDarkTheme || false,
-                logoUrl: data.logoUrl || '',
-                heroImageUrl: data.heroImageUrl || '',
-            });
+            setFullSettings(data); // Store the complete object
         } catch (error) {
-            toast.error("Failed to load restaurant settings.");
+            toast.error(t("failedToLoadSettings"));
         } finally {
             setIsLoading(false);
         }
-    }, [user]);
+    }, [user, t]);
 
     useEffect(() => {
-        fetchSettings();
-    }, [fetchSettings]);
+        fetchAllSettings();
+    }, [fetchAllSettings]);
 
     const handleInputChange = (event) => {
-        const { name, value } = event.target;
-        setSettings(prev => ({ ...prev, [name]: value }));
+        setFullSettings(prev => ({ ...prev, [event.target.name]: event.target.value }));
     };
 
     const handleToggleChange = (event) => {
-        const { name, checked } = event.target;
-        setSettings(prev => ({ ...prev, [name]: checked }));
+        setFullSettings(prev => ({ ...prev, [event.target.name]: event.target.checked }));
     };
 
     const handleSave = async () => {
         setIsSaving(true);
-        const promise = apiClient.put(`/api/restaurants/${user.restaurantId}`, settings);
+        // --- CHANGED: Send the complete `fullSettings` object ---
+        const promise = apiClient.put(`/api/restaurants/${user.restaurantId}`, fullSettings);
         toast.promise(promise, {
-            loading: 'Saving settings...',
-            success: 'Settings updated successfully!',
-            error: 'Failed to save settings.'
+            loading: t('savingSettings'),
+            success: t('settingsUpdated'),
+            error: t('failedToSaveSettings')
         }).finally(() => setIsSaving(false));
     };
     
-    if (isLoading) {
+    if (isLoading || !fullSettings) {
         return <p>{t('loadingSettings')}</p>;
     }
 
@@ -89,30 +63,30 @@ function SettingsPage() {
             
             <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                    <TextField label={t('restaurantName')} name="name" value={settings.name} onChange={handleInputChange} fullWidth margin="normal" />
+                    <TextField label={t('restaurantName')} name="name" value={fullSettings.name || ''} onChange={handleInputChange} fullWidth margin="normal" />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                    <TextField label={t('address')} name="address" value={settings.address} onChange={handleInputChange} fullWidth margin="normal" />
+                    <TextField label={t('address')} name="address" value={fullSettings.address || ''} onChange={handleInputChange} fullWidth margin="normal" />
                 </Grid>
                 <Grid item xs={12}>
-                    <TextField label={t('contactEmail')} name="email" type="email" value={settings.email} onChange={handleInputChange} fullWidth margin="normal" />
+                    <TextField label={t('contactEmail')} name="email" type="email" value={fullSettings.email || ''} onChange={handleInputChange} fullWidth margin="normal" />
                 </Grid>
             </Grid>
 
             <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>{t('brandingDisplay')}</Typography>
             <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                    <TextField label={t('logoUrl')} name="logoUrl" value={settings.logoUrl} onChange={handleInputChange} fullWidth margin="normal" helperText={t('logoUrlHelper')} />
+                    <TextField label={t('logoUrl')} name="logoUrl" value={fullSettings.logoUrl || ''} onChange={handleInputChange} fullWidth margin="normal" helperText={t('logoUrlHelper')} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                    <TextField label={t('menuImageUrl')} name="heroImageUrl" value={settings.heroImageUrl} onChange={handleInputChange} fullWidth margin="normal" helperText={t('menuImageUrlHelper')} />
+                    <TextField label={t('menuImageUrl')} name="heroImageUrl" value={fullSettings.heroImageUrl || ''} onChange={handleInputChange} fullWidth margin="normal" helperText={t('menuImageUrlHelper')} />
                 </Grid>
             </Grid>
 
             <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>{t('featureManagement')}</Typography>
             <Box>
                 <FormControlLabel
-                    control={<Switch checked={settings.useDarkTheme} onChange={handleToggleChange} name="useDarkTheme" />}
+                    control={<Switch checked={fullSettings.useDarkTheme} onChange={handleToggleChange} name="useDarkTheme" />}
                     label={t('useDarkTheme')}
                 />
                 <br/>
@@ -124,7 +98,7 @@ function SettingsPage() {
                                 <Switch 
                                     // The `checked` prop now respects the feature flag.
                                     // It's only checked if the feature is available AND the setting is true.
-                                    checked={canUseReservations && settings.reservationsEnabled} 
+                                    checked={canUseReservations && fullSettings.reservationsEnabled} 
                                     onChange={handleToggleChange} 
                                     name="reservationsEnabled" 
                                 />
@@ -142,7 +116,7 @@ function SettingsPage() {
                         <FormControlLabel
                             control={
                                 <Switch 
-                                    checked={canUseQrOrdering && settings.qrCodeOrderingEnabled} 
+                                    checked={canUseQrOrdering && fullSettings.qrCodeOrderingEnabled} 
                                     onChange={handleToggleChange} 
                                     name="qrCodeOrderingEnabled" 
                                 />
@@ -159,7 +133,7 @@ function SettingsPage() {
                         <FormControlLabel
                             control={
                                 <Switch 
-                                    checked={canUseRecommendations && settings.recommendationsEnabled} 
+                                    checked={canUseRecommendations && fullSettings.recommendationsEnabled} 
                                     onChange={handleToggleChange} 
                                     name="recommendationsEnabled" 
                                 />
