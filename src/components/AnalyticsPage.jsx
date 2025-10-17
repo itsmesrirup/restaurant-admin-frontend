@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Paper, Typography, Grid, Box, CircularProgress } from '@mui/material';
+import { Paper, Typography, Grid, Box, CircularProgress, Alert } from '@mui/material';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useTranslation } from 'react-i18next';
 
@@ -20,6 +20,8 @@ function AnalyticsPage() {
     const [salesData, setSalesData] = useState([]);
     const [hourlyData, setHourlyData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    const hasAnalyticsFeature = user.availableFeatures?.includes('ANALYTICS');
 
     useEffect(() => {
         const fetchAnalytics = async () => {
@@ -50,6 +52,18 @@ function AnalyticsPage() {
         };
         fetchAnalytics();
     }, [user, t]);
+
+    // If the user doesn't have the feature, render an "Upgrade" prompt instead of the page.
+    if (!hasAnalyticsFeature) {
+        return (
+            <Paper sx={{ p: 3 }}>
+                <Typography variant="h5" gutterBottom>Analytics</Typography>
+                <Alert severity="info">
+                    The Analytics dashboard is a PREMIUM feature. Upgrade your plan to unlock powerful insights into your sales, top-selling items, and peak hours.
+                </Alert>
+            </Paper>
+        );
+    }
 
     if (isLoading) return <p>{t('loadingAnalytics')}</p>;
     if (!summary) return <p>{t('noAnalyticsData')}</p>;
