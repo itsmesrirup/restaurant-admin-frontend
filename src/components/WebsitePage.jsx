@@ -2,13 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
-import { Paper, Typography, Box, TextField, Button, Grid, CircularProgress, Alert } from '@mui/material';
+import { Paper, Typography, Box, TextField, Button, Grid, CircularProgress, Alert, IconButton, Stack } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 
 function WebsitePage() {
     const { t } = useTranslation();
     const { user } = useAuth();
     const [formData, setFormData] = useState({
-        aboutUsText: '', phoneNumber: '', openingHours: '', googleMapsUrl: '', slug: ''
+        aboutUsText: '', phoneNumber: '', openingHours: '', googleMapsUrl: '', slug: '', instagramUrl: '', facebookUrl: '', twitterUrl: ''
     });
     const [fullSettings, setFullSettings] = useState(null); 
     const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +42,24 @@ function WebsitePage() {
     const handleInputChange = (e) => {
         setFullSettings(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
+    };
+
+    // --- ADDED: Handlers for Gallery ---
+    const handleAddGalleryImage = () => {
+        const currentImages = fullSettings.galleryImageUrls || [];
+        setFullSettings({ ...fullSettings, galleryImageUrls: [...currentImages, ''] });
+    };
+
+    const handleGalleryUrlChange = (index, value) => {
+        const newImages = [...(fullSettings.galleryImageUrls || [])];
+        newImages[index] = value;
+        setFullSettings({ ...fullSettings, galleryImageUrls: newImages });
+    };
+
+    const handleRemoveGalleryImage = (index) => {
+        const newImages = [...(fullSettings.galleryImageUrls || [])];
+        newImages.splice(index, 1);
+        setFullSettings({ ...fullSettings, galleryImageUrls: newImages });
     };
 
     const handleSave = () => {
@@ -122,11 +142,68 @@ function WebsitePage() {
                         helperText={t('aboutUsHelper')}
                     />
                 </Grid>
+                {/* --- NEW: Gallery Management Section --- */}
+                <Grid item xs={12}>
+                    <Typography variant="h6" sx={{ mt: 2 }}>Gallery Images</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Add URLs for images you want to display in your About section. (e.g. from Imgur, Cloudinary).
+                    </Typography>
+                    
+                    {(fullSettings.galleryImageUrls || []).map((url, index) => (
+                        <Box key={index} sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                            <TextField
+                                label={`Image URL #${index + 1}`}
+                                value={url}
+                                onChange={(e) => handleGalleryUrlChange(index, e.target.value)}
+                                fullWidth
+                                size="small"
+                            />
+                            <IconButton onClick={() => handleRemoveGalleryImage(index)} color="error">
+                                <DeleteIcon />
+                            </IconButton>
+                        </Box>
+                    ))}
+                    <Button 
+                        startIcon={<AddCircleOutlineIcon />} 
+                        onClick={handleAddGalleryImage} 
+                        variant="outlined" 
+                        size="small"
+                    >
+                        Add Image URL
+                    </Button>
+                </Grid>
                 <Grid item xs={12} sm={6}>
                     <TextField name="phoneNumber" label={t('phoneLabelAdmin')} value={fullSettings.phoneNumber || ''} onChange={handleInputChange} fullWidth />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                     <TextField name="openingHours" label={t('hoursLabel')} value={fullSettings.openingHours || ''} onChange={handleInputChange} fullWidth helperText={t('openingHoursHelper')} />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                    <TextField 
+                        name="instagramUrl" 
+                        label="Instagram URL" 
+                        value={fullSettings.instagramUrl || ''} // Ensure fullSettings has this field (it will after DTO update)
+                        onChange={handleInputChange} 
+                        fullWidth 
+                    />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                    <TextField 
+                        name="facebookUrl" 
+                        label="Facebook URL" 
+                        value={fullSettings.facebookUrl || ''} // Ensure fullSettings has this field (it will after DTO update)
+                        onChange={handleInputChange} 
+                        fullWidth 
+                    />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                    <TextField 
+                        name="twitterUrl" 
+                        label="Twitter URL" 
+                        value={fullSettings.twitterUrl || ''} // Ensure fullSettings has this field (it will after DTO update)
+                        onChange={handleInputChange} 
+                        fullWidth 
+                    />
                 </Grid>
                 <Grid item xs={12}>
                     <TextField name="googleMapsUrl" label="Google Maps URL" value={fullSettings.googleMapsUrl || ''} onChange={handleInputChange} fullWidth helperText={t('googleMapsHelper')} />

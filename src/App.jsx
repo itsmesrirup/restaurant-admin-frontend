@@ -11,6 +11,8 @@ import CategoryManagement from './components/CategoryManagement';
 import SpecialsManagement from './components/SpecialsManagement';
 import UserManagement from './components/UserManagement';
 import AnalyticsPage from './components/AnalyticsPage';
+import MenuImporter from './components/MenuImporter';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { Toaster } from 'react-hot-toast';
 
 // MUI components for the new responsive layout
@@ -88,7 +90,7 @@ function App() {
         ADMIN: {
             views: {
                 orders: <OrderDashboard />, kds: <KdsView />, analytics: <AnalyticsPage />,
-                menu: <MenuManagement />, category: <CategoryManagement />, specials: <SpecialsManagement />,
+                menu: <MenuManagement />, importMenu: <MenuImporter />, category: <CategoryManagement />, specials: <SpecialsManagement />,
                 reservations: <ReservationManagement />, users: <UserManagement />, website: <WebsitePage />, settings: <SettingsPage />,
                 commissions: <CommissionPage />
             },
@@ -101,6 +103,7 @@ function App() {
                     { textKey: 'kitchenView', view: 'kds', icon: <DvrIcon />, feature: 'ORDERS' },
                     { textKey: 'analytics', view: 'analytics', icon: <BarChartIcon />, feature: 'ANALYTICS' },
                     { textKey: 'menuManagement', view: 'menu', icon: <RestaurantMenuIcon />, feature: 'MENU' },
+                    { textKey: 'importMenu', view: 'importMenu', icon: <CloudUploadIcon />, feature: 'MENU' },
                     { textKey: 'categoryManagement', view: 'category', icon: <CategoryIcon />, feature: 'MENU' },
                     { textKey: 'specials', view: 'specials', icon: <StarIcon />, feature: 'MENU' },
                     { textKey: 'reservations', view: 'reservations', icon: <EventSeatIcon />, feature: 'RESERVATIONS' },

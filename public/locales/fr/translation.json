@@ -236,5 +236,6 @@
   "seoPageDescriptionHelper": "Court résumé qui apparaît sous le titre dans les résultats de recherche Google (environ 160 caractères).",
   "websiteContentSaved": "Contenu du site web enregistré !",
   "failedToSaveContent": "Échec de l'enregistrement du contenu.",
-  "failedToLoadRestaurantData": "Échec du chargement des données du restaurant."
+  "failedToLoadRestaurantData": "Échec du chargement des données du restaurant.",
+  "importMenu": "Menu d'importation"
 }

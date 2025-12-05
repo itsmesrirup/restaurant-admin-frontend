@@ -16,32 +16,58 @@ export const apiClient = {
         return response.text();
     },
 
-    getAuthHeaders: () => {
-        // --- FIX 1: Use the correct localStorage key 'authToken' ---
+    // --- CHANGED: Added isFormData parameter ---
+    getAuthHeaders: (isFormData = false) => {
         const token = localStorage.getItem('authToken');
-        return {
+        const headers = {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
         };
+        // --- CHANGED: Only set JSON content type if it's NOT FormData ---
+        // Let the browser set the Content-Type (including boundary) for FormData automatically.
+        if (!isFormData) {
+            headers['Content-Type'] = 'application/json';
+        }
+        return headers;
     },
     
-    // Define the HTTP methods. They all use the API_BASE_URL.
     get: async function(path) {
         const response = await fetch(`${API_BASE_URL}${path}`, { headers: this.getAuthHeaders() });
         return this.handleResponse(response);
     },
+
+    // --- CHANGED: Check for FormData and pass correct headers ---
     post: async function(path, body) {
-        const response = await fetch(`${API_BASE_URL}${path}`, { method: 'POST', headers: this.getAuthHeaders(), body: JSON.stringify(body) });
+        const isFormData = body instanceof FormData;
+        const response = await fetch(`${API_BASE_URL}${path}`, { 
+            method: 'POST', 
+            headers: this.getAuthHeaders(isFormData), 
+            body: isFormData ? body : JSON.stringify(body) 
+        });
         return this.handleResponse(response);
     },
+
+    // --- CHANGED: Check for FormData ---
     patch: async function(path, body) {
-        const response = await fetch(`${API_BASE_URL}${path}`, { method: 'PATCH', headers: this.getAuthHeaders(), body: JSON.stringify(body) });
+        const isFormData = body instanceof FormData;
+        const response = await fetch(`${API_BASE_URL}${path}`, { 
+            method: 'PATCH', 
+            headers: this.getAuthHeaders(isFormData), 
+            body: isFormData ? body : JSON.stringify(body) 
+        });
         return this.handleResponse(response);
     },
+
+    // --- CHANGED: Check for FormData ---
     put: async function(path, body) {
-        const response = await fetch(`${API_BASE_URL}${path}`, { method: 'PUT', headers: this.getAuthHeaders(), body: JSON.stringify(body) });
+        const isFormData = body instanceof FormData;
+        const response = await fetch(`${API_BASE_URL}${path}`, { 
+            method: 'PUT', 
+            headers: this.getAuthHeaders(isFormData), 
+            body: isFormData ? body : JSON.stringify(body) 
+        });
         return this.handleResponse(response);
     },
+
     delete: async function(path) {
         const response = await fetch(`${API_BASE_URL}${path}`, { method: 'DELETE', headers: this.getAuthHeaders() });
         return this.handleResponse(response);
@@ -61,11 +87,9 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const fetchUserOnLoad = async () => {
             if (token) {
-                // Because of FIX 1, the apiClient now sends the correct header.
                 try {
                     const userData = await apiClient.get('/api/users/me');
                     
-                    // --- FIX 3: Your apiClient returns data directly, not in a `.data` property like axios ---
                     if (userData.role === 'SUPER_ADMIN') {
                         setUser(userData);
                     } else {
@@ -85,22 +109,16 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            // --- FIX 2: Make a direct `fetch` call for login ONLY. ---
-            // This bypasses the apiClient's automatic header injection, ensuring no old token is sent.
             const response = await fetch(`${API_BASE_URL}/api/auth/authenticate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }, // No 'Authorization' header
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
 
-            // Use our own handleResponse logic to check for errors and parse the JSON
             const data = await apiClient.handleResponse(response);
             
             const newToken = data.token;
             localStorage.setItem('authToken', newToken);
-            
-            // Now that we have a new token, we can update the state, which will
-            // trigger the useEffect to run with the correct token.
             setToken(newToken);
 
         } catch (error) {
@@ -112,7 +130,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('authToken');
         setToken(null);
         setUser(null);
-        // No need to delete from apiClient.defaults since you're not using it.
     };
 
     const value = { token, user, isLoading, login, logout };

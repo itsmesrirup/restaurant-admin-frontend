@@ -235,5 +235,6 @@
   "seoPageDescriptionHelper": "Short summary that appears under the title in Google search results (approx. 160 characters).",
   "websiteContentSaved": "Website content saved!",
   "failedToSaveContent": "Failed to save content.",
-  "failedToLoadRestaurantData": "Failed to load restaurant data."
+  "failedToLoadRestaurantData": "Failed to load restaurant data.",
+  "importMenu": "Import Menu"
 }
