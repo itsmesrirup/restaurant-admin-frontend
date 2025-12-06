@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Paper, Typography, Box, TextField, Button, Grid, Divider, List, ListItem, ListItemText, IconButton, CircularProgress, FormControl, InputLabel, Select, MenuItem, InputAdornment } from '@mui/material';
+import { Paper, Typography, Box, TextField, Button, Grid, Divider, List, ListItem, ListItemText, IconButton, CircularProgress, FormControl, InputLabel, Select, MenuItem, InputAdornment, FormControlLabel, Switch } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 function SuperAdminDashboard() {
@@ -134,6 +134,21 @@ function SuperAdminDashboard() {
         });
     };
 
+    const handleToggleWebsite = (id, newValue) => {
+        // Send 'websiteBuilderEnabled' in the body
+        const promise = apiClient.patch(`/api/restaurants/${id}/features`, { websiteBuilderEnabled: newValue });
+        
+        toast.promise(promise, {
+            loading: 'Updating...',
+            success: () => {
+                // Update local state with new field name
+                setRestaurants(prev => prev.map(r => r.id === id ? { ...r, websiteBuilderEnabled: newValue } : r));
+                return 'Website feature updated!';
+            },
+            error: 'Failed to update.'
+        });
+    };
+
     return (
         <Box>
             <Typography variant="h4" gutterBottom>Super Admin Dashboard</Typography>
@@ -210,6 +225,20 @@ function SuperAdminDashboard() {
                                         </Select>
                                     </FormControl>
                                 )}
+
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            // Check the NEW field name
+                                            checked={!!restaurant.websiteBuilderEnabled}
+                                            onChange={(e) => handleToggleWebsite(restaurant.id, e.target.checked)}
+                                            color="primary"
+                                            size="small"
+                                        />
+                                    }
+                                    label="Website Builder"
+                                    sx={{ mr: 2 }}
+                                />
 
                                 {restaurant.active ? (
                                     <IconButton aria-label="delete" onClick={() => handleDeleteRestaurant(restaurant.id)}>
