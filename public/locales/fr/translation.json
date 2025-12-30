@@ -237,5 +237,7 @@
   "websiteContentSaved": "Contenu du site web enregistré !",
   "failedToSaveContent": "Échec de l'enregistrement du contenu.",
   "failedToLoadRestaurantData": "Échec du chargement des données du restaurant.",
-  "importMenu": "Menu d'importation"
+  "importMenu": "Menu d'importation",
+  "scheduledFilter": "Planifié",
+  "pickupAsap": "Retrait : Immédiat"
 }

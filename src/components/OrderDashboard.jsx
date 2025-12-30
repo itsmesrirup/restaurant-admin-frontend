@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Divider } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 function OrderDashboard() {
     const { t } = useTranslation();
@@ -17,6 +18,7 @@ function OrderDashboard() {
         if (!user) return;
         try {
             const data = await apiClient.get('/api/orders/by-restaurant');
+            // Sort: Pending/Preparing first, then by ID
             data.sort((a, b) => b.id - a.id);
             setOrders(data);
         } catch (error) {
@@ -51,7 +53,20 @@ function OrderDashboard() {
     };
     
     const filteredOrders = useMemo(() => {
+        // --- ADDED: Scheduled Filter Logic ---
+        if (filter === 'SCHEDULED') {
+            // Show orders that HAVE a pickup time and are NOT completed/cancelled
+            return orders.filter(order => 
+                order.pickupTime !== null && 
+                order.status !== 'DELIVERED' && 
+                order.status !== 'CANCELLED'
+            );
+        }
+
+        // For other tabs, generally hide the future scheduled ones to keep "Live" clean
+        // (Optional: You can decide if "ALL" should include scheduled or not)
         if (filter === 'ALL') return orders;
+        
         return orders.filter(order => order.status === filter);
     }, [orders, filter]);
     
@@ -65,15 +80,27 @@ function OrderDashboard() {
         window.scrollTo(0, 0);
     };
 
+    const showPagination = filteredOrders.length > ordersPerPage;
+
     if (isLoading) {
         return <CircularProgress />;
     }
 
     return (
-        <Box>
+        <Box sx={{ pb: 4 }}>
             <Typography variant="h4" gutterBottom>{t('liveOrdersTitle')}</Typography>
             <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                 <Typography variant="body1"><strong>{t('filter')}:</strong></Typography>
+                {/* --- ADDED: Scheduled Button --- */}
+                <Button 
+                    variant={filter === 'SCHEDULED' ? 'contained' : 'outlined'} 
+                    color="secondary" // Distinct color
+                    startIcon={<AccessTimeIcon />}
+                    onClick={() => { setFilter('SCHEDULED'); setPage(1); }}
+                >
+                    {t('scheduledFilter')}
+                </Button>
+
                 <Button variant={filter === 'PENDING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PENDING'); setPage(1); }}>{t('pending')}</Button>
                 <Button variant={filter === 'CONFIRMED' ? 'contained' : 'outlined'} onClick={() => { setFilter('CONFIRMED'); setPage(1); }}>{t('confirmed')}</Button>
                 <Button variant={filter === 'PREPARING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PREPARING'); setPage(1); }}>{t('preparing')}</Button>
@@ -82,17 +109,41 @@ function OrderDashboard() {
             
             {filteredOrders.length > 0 ? (
                 <>
-                    <Grid container spacing={2}>
+                    <Grid container spacing={3} alignItems="stretch">
                         {paginatedOrders.map(order => (
-                            <Grid item xs={12} sm={6} lg={4} key={order.id}>
-                                <Paper elevation={3} sx={{ p: 2, borderRadius: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                    <Box sx={{ flexGrow: 1 }}>
-                                        <Typography variant="h6">{t('orderNum', { orderId: order.id })}</Typography>
-                                        {order.tableNumber && <Typography variant="h6" color="secondary">{t('forTable', { tableNumber: order.tableNumber })}</Typography>}
-                                        <Typography variant="body1" sx={{ mt: 1 }}>
-                                            <strong>{t('statusLabel')} </strong> 
-                                            {t(`orderStatus.${order.status}`, { defaultValue: order.status })}
-                                        </Typography>
+                            <Grid item xs={12} sm={6} lg={4} key={order.id} sx={{ display: 'flex' }}>
+                                {/* --- FIX: The Paper component now fills the flex container --- */}
+                                <Paper 
+                                    elevation={3} 
+                                    sx={{ 
+                                        p: 2, 
+                                        width: '100%',
+                                        display: 'flex', 
+                                        flexDirection: 'column', 
+                                        justifyContent: 'space-between', // Push footer to bottom
+                                        borderRadius: 2, 
+                                        border: order.pickupTime ? '2px solid #9c27b0' : 'none',
+                                        // Crucial: No fixed height here! Let content dictate height.
+                                    }}
+                                >
+                                    <Box>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography variant="h6">{t('orderNum', { orderId: order.id })}</Typography>
+                                            {order.tableNumber && <Chip label={t('forTable', { tableNumber: order.tableNumber })} color="primary" size="small" />}
+                                        </Box>
+                                        
+                                        {order.pickupTime ? (
+                                            <Typography variant="body1" sx={{ mt: 1, color: 'secondary.main', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                <AccessTimeIcon fontSize="small"/> 
+                                                {new Date(order.pickupTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
+                                            </Typography>
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{t('pickupAsap')}</Typography>
+                                        )}
+
+                                        <Typography variant="body1" sx={{ mt: 1 }}><strong>{t('statusLabel')}</strong> {t(`orderStatus.${order.status}`, { defaultValue: order.status })}</Typography>
+                                        
+                                        <Divider sx={{ my: 1 }} />
                                         <Box component="ul" sx={{ listStyle: 'none', p: 0, mt: 1 }}>
                                             {order.items?.map((item, index) => {
                                                 let selectedOptions = [];
@@ -111,7 +162,8 @@ function OrderDashboard() {
                                         </Box>
                                         <Typography variant="h6" sx={{ mt: 1 }}><strong>{t('total', { total: `€${order.totalPrice?.toFixed(2)}` })}</strong></Typography>
                                     </Box>
-                                    <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                    
+                                    <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee', display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                         <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'CONFIRMED')}>{t('confirm')}</Button>
                                         <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('preparing')}</Button>
                                         <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'READY_FOR_PICKUP')}>{t('ready')}</Button>
@@ -121,14 +173,16 @@ function OrderDashboard() {
                             </Grid>
                         ))}
                     </Grid>
-                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                        <Pagination 
-                            count={Math.ceil(filteredOrders.length / ordersPerPage)} 
-                            page={page} 
-                            onChange={handlePageChange}
-                            color="primary"
-                        />
-                    </Box>
+                    {showPagination && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                            <Pagination 
+                                count={Math.ceil(filteredOrders.length / ordersPerPage)} 
+                                page={page} 
+                                onChange={handlePageChange}
+                                color="primary"
+                            />
+                        </Box>
+                    )}
                 </>
             ) : (
                 <Typography>{t('noOrdersMatchFilter')}</Typography>

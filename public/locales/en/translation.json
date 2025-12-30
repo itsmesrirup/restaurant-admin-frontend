@@ -236,5 +236,7 @@
   "websiteContentSaved": "Website content saved!",
   "failedToSaveContent": "Failed to save content.",
   "failedToLoadRestaurantData": "Failed to load restaurant data.",
-  "importMenu": "Import Menu"
+  "importMenu": "Import Menu",
+  "scheduledFilter": "Scheduled",
+  "pickupAsap": "Pickup: ASAP"
 }

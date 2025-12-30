@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
-import { Paper, Typography, Box, TextField, Button, Grid, CircularProgress, Alert, IconButton, Stack } from '@mui/material';
+import { Paper, Typography, Box, TextField, Button, Grid, CircularProgress, Alert, IconButton, Stack, Divider } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 
@@ -96,124 +96,90 @@ function WebsitePage() {
     return (
         <Paper sx={{ p: 3 }}>
             <Typography variant="h5" gutterBottom>{t('managePublicWebsite')}</Typography>
-            <Grid container spacing={3}>
-                 {/* --- FIX: All `value` and `helperText` props now correctly read from `fullSettings` --- */}
+            
+            {/* --- SECTION 1: SEO & BASIC CONTENT --- */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12}><Typography variant="h6" color="text.secondary">SEO Settings</Typography></Grid>
                 <Grid item xs={12}>
-                    <TextField
-                        name="metaTitle"
-                        label={t('seoPageTitle')}
-                        value={fullSettings.metaTitle || ''}
-                        onChange={handleInputChange}
-                        fullWidth
-                        helperText={t('seoPageTitleHelper')}
-                    />
+                    <TextField name="metaTitle" label={t('seoPageTitle')} value={fullSettings.metaTitle || ''} onChange={handleInputChange} fullWidth helperText={t('seoPageTitleHelper')} />
                 </Grid>
                 <Grid item xs={12}>
-                    <TextField
-                        name="metaDescription"
-                        label={t('seoPageDescription')}
-                        value={fullSettings.metaDescription || ''}
-                        onChange={handleInputChange}
-                        fullWidth
-                        multiline
-                        rows={2}
-                        helperText={t('seoPageDescriptionHelper')}
-                    />
+                    <TextField name="metaDescription" label={t('seoPageDescription')} value={fullSettings.metaDescription || ''} onChange={handleInputChange} fullWidth multiline rows={2} helperText={t('seoPageDescriptionHelper')} />
+                </Grid>
+
+                <Grid item xs={12}><Typography variant="h6" color="text.secondary" sx={{ mt: 2 }}>Content</Typography></Grid>
+                <Grid item xs={12}>
+                    <TextField name="slug" label={t('websiteSlugLabel')} value={fullSettings.slug || ''} onChange={handleInputChange} fullWidth helperText={t('websiteSlugHelper', { slug: fullSettings.slug || '...' })} />
                 </Grid>
                 <Grid item xs={12}>
-                    <TextField
-                        name="slug"
-                        label={t('websiteSlugLabel')}
-                        value={fullSettings.slug || ''}
-                        onChange={handleInputChange}
-                        fullWidth
-                        helperText={t('websiteSlugHelper', { slug: fullSettings.slug || '...' })}
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    <TextField
-                        name="aboutUsText"
-                        label={t('aboutUs')}
-                        value={fullSettings.aboutUsText || ''}
-                        onChange={handleInputChange}
-                        fullWidth
-                        multiline
-                        rows={6}
-                        helperText={t('aboutUsHelper')}
-                    />
-                </Grid>
-                {/* --- NEW: Gallery Management Section --- */}
-                <Grid item xs={12}>
-                    <Typography variant="h6" sx={{ mt: 2 }}>Gallery Images</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Add URLs for images you want to display in your About section. (e.g. from Imgur, Cloudinary).
-                    </Typography>
-                    
-                    {(fullSettings.galleryImageUrls || []).map((url, index) => (
-                        <Box key={index} sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                            <TextField
-                                label={`Image URL #${index + 1}`}
-                                value={url}
-                                onChange={(e) => handleGalleryUrlChange(index, e.target.value)}
-                                fullWidth
-                                size="small"
-                            />
-                            <IconButton onClick={() => handleRemoveGalleryImage(index)} color="error">
-                                <DeleteIcon />
-                            </IconButton>
-                        </Box>
-                    ))}
-                    <Button 
-                        startIcon={<AddCircleOutlineIcon />} 
-                        onClick={handleAddGalleryImage} 
-                        variant="outlined" 
-                        size="small"
-                    >
-                        Add Image URL
-                    </Button>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <TextField name="phoneNumber" label={t('phoneLabelAdmin')} value={fullSettings.phoneNumber || ''} onChange={handleInputChange} fullWidth />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <TextField name="openingHours" label={t('hoursLabel')} value={fullSettings.openingHours || ''} onChange={handleInputChange} fullWidth helperText={t('openingHoursHelper')} />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                    <TextField 
-                        name="instagramUrl" 
-                        label="Instagram URL" 
-                        value={fullSettings.instagramUrl || ''} // Ensure fullSettings has this field (it will after DTO update)
-                        onChange={handleInputChange} 
-                        fullWidth 
-                    />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                    <TextField 
-                        name="facebookUrl" 
-                        label="Facebook URL" 
-                        value={fullSettings.facebookUrl || ''} // Ensure fullSettings has this field (it will after DTO update)
-                        onChange={handleInputChange} 
-                        fullWidth 
-                    />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                    <TextField 
-                        name="twitterUrl" 
-                        label="Twitter URL" 
-                        value={fullSettings.twitterUrl || ''} // Ensure fullSettings has this field (it will after DTO update)
-                        onChange={handleInputChange} 
-                        fullWidth 
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    <TextField name="googleMapsUrl" label="Google Maps URL" value={fullSettings.googleMapsUrl || ''} onChange={handleInputChange} fullWidth helperText={t('googleMapsHelper')} />
-                </Grid>
-                <Grid item xs={12}>
-                    <Button variant="contained" onClick={handleSave} disabled={isSaving}>
-                        {isSaving ? t('saving') : t('saveWebsiteContent')}
-                    </Button>
+                    <TextField name="aboutUsText" label={t('aboutUs')} value={fullSettings.aboutUsText || ''} onChange={handleInputChange} fullWidth multiline rows={6} helperText={t('aboutUsHelper')} />
                 </Grid>
             </Grid>
+
+            <Divider />
+
+            {/* --- SECTION 2: GALLERY --- */}
+            <Box sx={{ my: 4 }}>
+                <Typography variant="h6" gutterBottom>Gallery Images</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Add URLs for images you want to display in your About section.
+                </Typography>
+                
+                {(fullSettings.galleryImageUrls || []).map((url, index) => (
+                    <Box key={index} sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                        <TextField
+                            label={`Image URL #${index + 1}`}
+                            value={url}
+                            onChange={(e) => handleGalleryUrlChange(index, e.target.value)}
+                            fullWidth
+                            size="small"
+                        />
+                        <IconButton onClick={() => handleRemoveGalleryImage(index)} color="error">
+                            <DeleteIcon />
+                        </IconButton>
+                    </Box>
+                ))}
+                <Button startIcon={<AddCircleOutlineIcon />} onClick={handleAddGalleryImage} variant="outlined" size="small">
+                    Add Image URL
+                </Button>
+            </Box>
+
+            <Divider />
+
+            {/* --- SECTION 3: SOCIAL MEDIA --- */}
+            <Box sx={{ my: 4 }}>
+                <Typography variant="h6" gutterBottom>Social Media Links</Typography>
+                <Grid container spacing={3}>
+                    <Grid item xs={12} sm={4}>
+                        <TextField name="instagramUrl" label="Instagram URL" value={fullSettings.instagramUrl || ''} onChange={handleInputChange} fullWidth />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <TextField name="facebookUrl" label="Facebook URL" value={fullSettings.facebookUrl || ''} onChange={handleInputChange} fullWidth />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <TextField name="twitterUrl" label="Twitter URL" value={fullSettings.twitterUrl || ''} onChange={handleInputChange} fullWidth />
+                    </Grid>
+                </Grid>
+            </Box>
+
+            <Divider />
+
+            {/* --- SECTION 4: LOCATION --- */}
+            <Box sx={{ my: 4 }}>
+                <Typography variant="h6" gutterBottom>Location Map</Typography>
+                <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                        <TextField name="googleMapsUrl" label="Google Maps URL" value={fullSettings.googleMapsUrl || ''} onChange={handleInputChange} fullWidth helperText={t('googleMapsHelper')} />
+                    </Grid>
+                </Grid>
+            </Box>
+
+            {/* --- SAVE BUTTON --- */}
+            <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button variant="contained" onClick={handleSave} disabled={isSaving} size="large">
+                    {isSaving ? t('saving') : t('saveWebsiteContent')}
+                </Button>
+            </Box>
         </Paper>
     );
 }

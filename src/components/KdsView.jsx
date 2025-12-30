@@ -3,6 +3,7 @@ import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { Box, Typography, Button, Paper, Grid, CircularProgress, Chip, Divider } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import AccessTimeIcon from '@mui/icons-material/AccessTime'; // Import
 import notificationSound from '/notification.mp3'; 
 import { useTranslation } from 'react-i18next';
 
@@ -18,7 +19,16 @@ function KdsView() {
         if (!user) return;
         try {
             const data = await apiClient.get('/api/orders/by-restaurant/kitchen');
-            data.sort((a, b) => a.id - b.id);
+            
+            // --- IMPROVED SORTING ---
+            // 1. Scheduled items closest to pickup time first
+            // 2. Then ASAP items by ID
+            data.sort((a, b) => {
+                if (a.pickupTime && b.pickupTime) return new Date(a.pickupTime) - new Date(b.pickupTime);
+                if (a.pickupTime) return 1; // Push scheduled to the end (or -1 to put them first, your choice)
+                if (b.pickupTime) return -1;
+                return a.id - b.id;
+            });
             
             if (previousOrderCount.current > 0 && data.length > orders.length) {
                 audio.play().catch(e => console.error("Audio playback failed:", e));
@@ -32,7 +42,7 @@ function KdsView() {
         } finally {
             setIsLoading(false);
         }
-    }, [user, audio, orders.length]); // Depends on orders.length to check for new orders
+    }, [user, audio, orders.length]);
 
     useEffect(() => {
         if (user) {
@@ -44,20 +54,18 @@ function KdsView() {
     }, [user, fetchKitchenOrders]);
     
     const handleUpdateStatus = (orderId, newStatus) => {
-        // ✅ RESTORED: Optimistic UI update for an instant feel
         const originalOrders = orders;
         const newOrders = orders.filter(o => o.id !== orderId);
-        setOrders(newOrders); // Remove the card from the screen immediately
+        setOrders(newOrders); 
 
         const promise = apiClient.patch(`/api/orders/${orderId}/status`, { status: newStatus });
         
         toast.promise(promise, {
-            loading: 'Updating status...',
-            success: 'Status updated!',
+            loading: t('updatingStatus'),
+            success: t('statusUpdated'),
             error: () => {
-                // If the API call fails, revert the change and show an error
                 setOrders(originalOrders);
-                return 'Failed to update status. Order restored.';
+                return t('statusUpdateFailed');
             }
         });
     };
@@ -65,43 +73,70 @@ function KdsView() {
     if (isLoading) return <CircularProgress />;
 
     return (
-        <Box>
+        <Box sx={{ pb: 4 }}>
             <Typography variant="h4" gutterBottom>{t('kitchenDisplayTitle')}</Typography>
             {orders.length === 0 ? (
                 <Typography>{t('noActiveOrders')}</Typography>
             ) : (
-                <Grid container spacing={2}>
+                // --- FIX: Use alignItems="stretch" here as well ---
+                <Grid container spacing={2} alignItems="stretch">
                     {orders.map(order => (
-                        <Grid item xs={12} sm={6} md={4} key={order.id}>
+                        // --- FIX: Add display: flex to the Grid item ---
+                        <Grid item xs={12} sm={6} md={4} key={order.id} sx={{ display: 'flex' }}>
                             <Paper 
                                 elevation={3} 
                                 sx={{ 
-                                    p: 2, height: '100%',
-                                    backgroundColor: order.status === 'PREPARING' ? 'secondary.light' : 'background.paper'
+                                    p: 2, 
+                                    // --- FIX: width 100% and flex column layout ---
+                                    width: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                    backgroundColor: order.pickupTime ? '#f3e5f5' : (order.status === 'PREPARING' ? 'secondary.light' : 'background.paper'),
+                                    border: order.pickupTime ? '2px solid #9c27b0' : 'none'
                                 }}
                             >
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography variant="h5" fontWeight="bold">{t('orderNum', { orderId: order.id })}</Typography>
-                                    {order.tableNumber && <Chip label={t('tableNum', { tableNumber: order.tableNumber })} color="secondary" />}
+                                <Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Typography variant="h5" fontWeight="bold">{t('orderNum', { orderId: order.id })}</Typography>
+                                        
+                                        {order.tableNumber && <Chip label={t('tableNum', { tableNumber: order.tableNumber })} color="secondary" />}
+                                    </Box>
+
+                                    {/* Date Display (already improved in previous step) */}
+                                    <Box sx={{ mt: 1, mb: 1 }}>
+                                        {order.pickupTime ? (
+                                            <Chip 
+                                                icon={<AccessTimeIcon />} 
+                                                label={new Date(order.pickupTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })} 
+                                                color="secondary" 
+                                                variant="outlined"
+                                                sx={{ fontWeight: 'bold' }}
+                                            />
+                                        ) : (
+                                            <Chip label={t('pickupAsap')} color="primary" size="small" />
+                                        )}
+                                    </Box>
+
+                                    <Divider sx={{ my: 1 }} />
+                                    <Box component="ul" sx={{ listStyle: 'none', p: 0, my: 2 }}>
+                                        {order.items?.map((item, index) => {
+                                            let selectedOptions = [];
+                                            if (item.selectedOptions) try { selectedOptions = JSON.parse(item.selectedOptions); } catch (e) {}
+                                            return (
+                                                <li key={`${item.menuItemId}-${index}`}>
+                                                    <Typography variant="h6">{item.quantity} x {item.name}</Typography>
+                                                    {selectedOptions.length > 0 && (
+                                                        <Box component="ul" sx={{ pl: 2, fontSize: '1rem', color: 'text.secondary' }}>
+                                                            {selectedOptions.map((opt, i) => <li key={i}>{opt}</li>)}
+                                                        </Box>
+                                                    )}
+                                                </li>
+                                            );
+                                        })}
+                                    </Box>
                                 </Box>
-                                <Divider sx={{ my: 1 }} />
-                                <Box component="ul" sx={{ listStyle: 'none', p: 0, my: 2 }}>
-                                    {order.items?.map((item, index) => {
-                                        let selectedOptions = [];
-                                        if (item.selectedOptions) try { selectedOptions = JSON.parse(item.selectedOptions); } catch (e) {}
-                                        return (
-                                            <li key={`${item.menuItemId}-${index}`}>
-                                                <Typography variant="h6">{item.quantity} x {item.name}</Typography>
-                                                {selectedOptions.length > 0 && (
-                                                    <Box component="ul" sx={{ pl: 2, fontSize: '1rem', color: 'text.secondary' }}>
-                                                        {selectedOptions.map((opt, i) => <li key={i}>{opt}</li>)}
-                                                    </Box>
-                                                )}
-                                            </li>
-                                        );
-                                    })}
-                                </Box>
-                                <Box sx={{ mt: 'auto', pt: 2 }}>
+                                <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
                                     {order.status === 'CONFIRMED' && (
                                         <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('startPreparing')}</Button>
                                     )}

@@ -3,6 +3,7 @@ import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { Switch, FormControlLabel, TextField, Button, Paper, Typography, Box, Grid, CircularProgress, Tooltip } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import OpeningHoursEditor from './OpeningHoursEditor';
 
 function SettingsPage() {
     const { user } = useAuth();
@@ -47,6 +48,11 @@ function SettingsPage() {
             error: t('failedToSaveSettings')
         }).finally(() => setIsSaving(false));
     };
+
+    // Handler specifically for the Opening Hours component
+    const handleOpeningHoursChange = (newJsonString) => {
+        setFullSettings(prev => ({ ...prev, openingHoursJson: newJsonString }));
+    };
     
     if (isLoading || !fullSettings) {
         return <p>{t('loadingSettings')}</p>;
@@ -61,29 +67,46 @@ function SettingsPage() {
         <Paper sx={{ p: 3, maxWidth: '800px', margin: 'auto' }}>
             <Typography variant="h5" gutterBottom>{t('settingsTitle')}</Typography>
             
-            <Grid container spacing={2}>
+            {/* --- SECTION 1: Basic Info (Name, Address, Email, Phone) --- */}
+            <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>General Information</Typography>
+            <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
-                    <TextField label={t('restaurantName')} name="name" value={fullSettings.name || ''} onChange={handleInputChange} fullWidth margin="normal" />
+                    <TextField label={t('restaurantName')} name="name" value={fullSettings.name || ''} onChange={handleInputChange} fullWidth />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                    <TextField label={t('address')} name="address" value={fullSettings.address || ''} onChange={handleInputChange} fullWidth margin="normal" />
+                    <TextField label={t('address')} name="address" value={fullSettings.address || ''} onChange={handleInputChange} fullWidth />
                 </Grid>
-                <Grid item xs={12}>
-                    <TextField label={t('contactEmail')} name="email" type="email" value={fullSettings.email || ''} onChange={handleInputChange} fullWidth margin="normal" />
+                <Grid item xs={12} sm={6}>
+                    <TextField label={t('contactEmail')} name="email" value={fullSettings.email || ''} onChange={handleInputChange} fullWidth />
+                </Grid>
+                {/* --- MOVED: Phone Number is now here for better alignment --- */}
+                <Grid item xs={12} sm={6}>
+                    <TextField label={t('phoneLabelAdmin')} name="phoneNumber" value={fullSettings.phoneNumber || ''} onChange={handleInputChange} fullWidth />
                 </Grid>
             </Grid>
 
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>{t('brandingDisplay')}</Typography>
-            <Grid container spacing={2}>
+            {/* --- SECTION 2: Operating Hours (Full Width) --- */}
+            <Box sx={{ mt: 4 }}>
+                {/* The component handles its own header, or we can add one here */}
+                <OpeningHoursEditor 
+                    value={fullSettings.openingHoursJson} 
+                    onChange={handleOpeningHoursChange} 
+                />
+            </Box>
+
+            {/* --- SECTION 3: Branding --- */}
+            <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>{t('brandingDisplay')}</Typography>
+            <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
-                    <TextField label={t('logoUrl')} name="logoUrl" value={fullSettings.logoUrl || ''} onChange={handleInputChange} fullWidth margin="normal" helperText={t('logoUrlHelper')} />
+                    <TextField label={t('logoUrl')} name="logoUrl" value={fullSettings.logoUrl || ''} onChange={handleInputChange} fullWidth helperText={t('logoUrlHelper')} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                    <TextField label={t('menuImageUrl')} name="heroImageUrl" value={fullSettings.heroImageUrl || ''} onChange={handleInputChange} fullWidth margin="normal" helperText={t('menuImageUrlHelper')} />
+                    <TextField label={t('menuImageUrl')} name="heroImageUrl" value={fullSettings.heroImageUrl || ''} onChange={handleInputChange} fullWidth helperText={t('menuImageUrlHelper')} />
                 </Grid>
             </Grid>
 
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>{t('featureManagement')}</Typography>
+            {/* --- SECTION 4: Features --- */}
+            <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>{t('featureManagement')}</Typography>
             <Box>
                 <FormControlLabel
                     control={<Switch checked={fullSettings.useDarkTheme} onChange={handleToggleChange} name="useDarkTheme" />}
