@@ -98,9 +98,17 @@ function KdsView() {
                             >
                                 <Box>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Typography variant="h5" fontWeight="bold">{t('orderNum', { orderId: order.id })}</Typography>
+                                        <Typography variant="h5" fontWeight="bold">{t('orderNum', { orderId: order.orderNumber })}</Typography>
                                         
                                         {order.tableNumber && <Chip label={t('tableNum', { tableNumber: order.tableNumber })} color="secondary" />}
+
+                                        {/* --- NEW: Payment Status Chip --- */}
+                                        {order.paymentIntentId ? (
+                                            <Chip label="PAID" color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                                        ) : (
+                                            <Chip label="UNPAID" color="warning" size="small" variant="outlined" />
+                                        )}
+
                                     </Box>
 
                                     {/* Date Display (already improved in previous step) */}

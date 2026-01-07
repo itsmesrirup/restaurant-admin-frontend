@@ -238,5 +238,9 @@
   "failedToLoadRestaurantData": "Failed to load restaurant data.",
   "importMenu": "Import Menu",
   "scheduledFilter": "Scheduled",
-  "pickupAsap": "Pickup: ASAP"
+  "pickupAsap": "Pickup: ASAP",
+  "confirmCancellationTitle": "Cancel Order?",
+  "confirmCancellationText": "Are you sure you want to cancel this order? If the customer paid online, they will be automatically refunded. This action cannot be undone.",
+  "keepOrder": "No, Keep Order",
+  "confirmCancel": "Yes, Cancel Order"
 }

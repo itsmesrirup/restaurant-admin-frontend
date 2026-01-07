@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Paper, Typography, Box, TextField, Button, Grid, Divider, List, ListItem, ListItemText, IconButton, CircularProgress, FormControl, InputLabel, Select, MenuItem, InputAdornment, FormControlLabel, Switch } from '@mui/material';
+import { Paper, Typography, Box, TextField, Button, Grid, Divider, List, ListItem, ListItemText, IconButton, CircularProgress, FormControl, InputLabel, Select, MenuItem, InputAdornment, FormControlLabel, Switch, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import LockResetIcon from '@mui/icons-material/LockReset';
 
 function SuperAdminDashboard() {
     // --- State for the component ---
@@ -13,6 +14,11 @@ function SuperAdminDashboard() {
     const [userEmail, setUserEmail] = useState('');
     const [userPassword, setUserPassword] = useState('');
     const [userRestaurantId, setUserRestaurantId] = useState('');
+
+     // --- ADDED: State for Password Reset Modal ---
+    const [resetDialogOpen, setResetDialogOpen] = useState(false);
+    const [selectedRestaurantId, setSelectedRestaurantId] = useState(null);
+    const [newPassword, setNewPassword] = useState('');
 
     const fetchAllRestaurants = useCallback(async () => {
         setIsLoading(true);
@@ -60,6 +66,27 @@ function SuperAdminDashboard() {
                 return 'Admin user created successfully!';
             },
             error: (err) => err.message,
+        });
+    };
+
+    // --- ADDED: The handler for the Payment Switch ---
+    const handleTogglePayments = (restaurantId, newValue) => {
+        // 1. Optimistically update UI
+        setRestaurants(prev => prev.map(r => 
+            r.id === restaurantId ? { ...r, paymentsEnabled: newValue } : r
+        ));
+
+        // 2. Call the API
+        const promise = apiClient.patch(`/api/restaurants/${restaurantId}/toggle-payments`, { enabled: newValue });
+        
+        toast.promise(promise, {
+            loading: 'Updating payment access...',
+            success: 'Payment access updated!',
+            error: (err) => {
+                // Revert on failure
+                fetchAllRestaurants();
+                return 'Failed to update payment settings.';
+            }
         });
     };
 
@@ -149,6 +176,30 @@ function SuperAdminDashboard() {
         });
     };
 
+    // --- ADDED: Handlers for Password Reset ---
+    const handleOpenResetDialog = (restaurantId) => {
+        setSelectedRestaurantId(restaurantId);
+        setNewPassword(''); // Clear previous input
+        setResetDialogOpen(true);
+    };
+
+    const handleResetPassword = async () => {
+        if (!newPassword) return;
+        
+        const promise = apiClient.patch(`/api/users/restaurant/${selectedRestaurantId}/admin/reset-password`, { 
+            newPassword: newPassword 
+        });
+
+        toast.promise(promise, {
+            loading: 'Resetting password...',
+            success: () => {
+                setResetDialogOpen(false);
+                return 'Password reset successfully!';
+            },
+            error: (err) => err.message || "Failed to reset password."
+        });
+    };
+
     return (
         <Box>
             <Typography variant="h4" gutterBottom>Super Admin Dashboard</Typography>
@@ -182,13 +233,31 @@ function SuperAdminDashboard() {
                 <List>
                     {restaurants.map(restaurant => (
                         <ListItem key={restaurant.id} divider>
-                            <ListItemText
-                                primary={`${restaurant.name} (ID: ${restaurant.id})`}
-                                sx={{ textDecoration: restaurant.active ? 'none' : 'line-through', flexGrow: 1, mr: 2 }}
-                                secondary={`Status: ${restaurant.active ? 'Active' : 'INACTIVE/Archived'}`}
-                            />
+                            <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, mr: 2 }}>
+                                <Typography variant="subtitle1" fontWeight="bold">
+                                    {restaurant.name} (ID: {restaurant.id})
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                    {restaurant.active ? 'Active' : 'Archived'}
+                                </Typography>
+                            </Box>
                             
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                                {/* --- The Payment Toggle Switch --- */}
+                                <FormControlLabel
+                                    control={
+                                        <Switch 
+                                            size="small"
+                                            checked={restaurant.paymentsEnabled || false} 
+                                            onChange={(e) => handleTogglePayments(restaurant.id, e.target.checked)} 
+                                            color="success"
+                                        />
+                                    }
+                                    label={<Typography variant="body2">Payments</Typography>}
+                                    labelPlacement="start"
+                                />
+
+                                {/* Billing Model Select */}
                                 <FormControl sx={{ m: 1, minWidth: 140 }} size="small">
                                     <InputLabel>Billing Model</InputLabel>
                                     <Select
@@ -201,6 +270,7 @@ function SuperAdminDashboard() {
                                     </Select>
                                 </FormControl>
 
+                                {/* Plan or Commission Input */}
                                 {restaurant.paymentModel === 'COMMISSION' ? (
                                     <TextField
                                         size="small"
@@ -240,6 +310,16 @@ function SuperAdminDashboard() {
                                     sx={{ mr: 2 }}
                                 />
 
+                                {/* --- ADDED: Reset Password Button --- */}
+                                <IconButton 
+                                    onClick={() => handleOpenResetDialog(restaurant.id)} 
+                                    title="Reset Admin Password"
+                                    color="warning"
+                                >
+                                    <LockResetIcon />
+                                </IconButton>
+
+                                {/* Delete / Reactivate */}
                                 {restaurant.active ? (
                                     <IconButton aria-label="delete" onClick={() => handleDeleteRestaurant(restaurant.id)}>
                                         <DeleteIcon color="error" />
@@ -254,6 +334,29 @@ function SuperAdminDashboard() {
                     ))}
                 </List>
             )}
+
+            {/* --- ADDED: The Reset Password Dialog --- */}
+            <Dialog open={resetDialogOpen} onClose={() => setResetDialogOpen(false)}>
+                <DialogTitle>Reset Admin Password</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                        Enter a new password for the administrator of this restaurant.
+                    </Typography>
+                    <TextField
+                        autoFocus
+                        label="New Password"
+                        type="password"
+                        fullWidth
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setResetDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleResetPassword} variant="contained" color="warning">Reset</Button>
+                </DialogActions>
+            </Dialog>
+
         </Box>
     );
 }

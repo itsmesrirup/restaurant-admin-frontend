@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Divider } from '@mui/material';
+import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Divider, Chip } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
@@ -12,7 +13,11 @@ function OrderDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState('ALL');
     const [page, setPage] = useState(1);
-    const ordersPerPage = 9;
+    const ordersPerPage = 10;
+
+    // --- ADDED: State for Cancel Dialog ---
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [orderToCancel, setOrderToCancel] = useState(null);
 
     const fetchOrders = useCallback(async () => {
         if (!user) return;
@@ -37,6 +42,21 @@ function OrderDashboard() {
             return () => clearInterval(interval); // Cleanup
         }
     }, [user, fetchOrders]);
+
+    // --- NEW: Open Dialog Handler ---
+    const handleCancelClick = (orderId) => {
+        setOrderToCancel(orderId);
+        setCancelDialogOpen(true);
+    };
+
+    // --- NEW: Confirm Cancellation Handler ---
+    const confirmCancel = () => {
+        if (orderToCancel) {
+            handleUpdateStatus(orderToCancel, 'CANCELLED');
+        }
+        setCancelDialogOpen(false);
+        setOrderToCancel(null);
+    };
 
     const handleUpdateStatus = (orderId, newStatus) => {
         const promise = apiClient.patch(`/api/orders/${orderId}/status`, { status: newStatus });
@@ -128,8 +148,16 @@ function OrderDashboard() {
                                 >
                                     <Box>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <Typography variant="h6">{t('orderNum', { orderId: order.id })}</Typography>
+                                            <Typography variant="h6">{t('orderNum', { orderId: order.orderNumber })}</Typography>
                                             {order.tableNumber && <Chip label={t('forTable', { tableNumber: order.tableNumber })} color="primary" size="small" />}
+
+                                            {/* --- NEW: Payment Status Chip --- */}
+                                            {order.paymentIntentId ? (
+                                                <Chip label="PAID" color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                                            ) : (
+                                                <Chip label="UNPAID" color="warning" size="small" variant="outlined" />
+                                            )}
+
                                         </Box>
                                         
                                         {order.pickupTime ? (
@@ -168,6 +196,19 @@ function OrderDashboard() {
                                         <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('preparing')}</Button>
                                         <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'READY_FOR_PICKUP')}>{t('ready')}</Button>
                                         <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'DELIVERED')}>{t('deliver')}</Button>
+
+                                        {/* --- ADDED: Cancel Button --- */}
+                                        {/* Only show if order is not completed/cancelled yet */}
+                                        {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+                                            <Button 
+                                                size="small" 
+                                                variant="outlined" 
+                                                color="error" // Red color
+                                                onClick={() => handleCancelClick(order.id)}
+                                            >
+                                                {t('cancel')}
+                                            </Button>
+                                        )}
                                     </Box>
                                 </Paper>
                             </Grid>
@@ -187,6 +228,24 @@ function OrderDashboard() {
             ) : (
                 <Typography>{t('noOrdersMatchFilter')}</Typography>
             )}
+            {/* --- ADDED: The Confirmation Dialog --- */}
+            <Dialog
+                open={cancelDialogOpen}
+                onClose={() => setCancelDialogOpen(false)}
+            >
+                <DialogTitle>{t('confirmCancellationTitle')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t('confirmCancellationText')}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCancelDialogOpen(false)}>{t('keepOrder')}</Button>
+                    <Button onClick={confirmCancel} color="error" variant="contained" autoFocus>
+                        {t('confirmCancel')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

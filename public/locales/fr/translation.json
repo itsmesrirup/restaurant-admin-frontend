@@ -239,5 +239,9 @@
   "failedToLoadRestaurantData": "Échec du chargement des données du restaurant.",
   "importMenu": "Menu d'importation",
   "scheduledFilter": "Planifié",
-  "pickupAsap": "Retrait : Immédiat"
+  "pickupAsap": "Retrait : Immédiat",
+  "confirmCancellationTitle": "Annuler la commande ?",
+  "confirmCancellationText": "Êtes-vous sûr de vouloir annuler cette commande ? Si le client a payé en ligne, il sera automatiquement remboursé. Cette action est irréversible.",
+  "keepOrder": "Non, conserver la commande",
+  "confirmCancel": "Oui, annuler la commande"
 }

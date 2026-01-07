@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { 
     Paper, Typography, Box, Button, Grid, CircularProgress, 
-    TextField, Accordion, AccordionSummary, AccordionDetails, IconButton 
+    TextField, Accordion, AccordionSummary, AccordionDetails, IconButton,
+    FormControl, InputLabel, Select, MenuItem 
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -41,10 +42,25 @@ const ItemsList = ({ items, onUpdate, onDelete }) => (
 );
 
 function MenuImporter() {
+    const { user } = useAuth();
     const [file, setFile] = useState(null);
     const [parsedData, setParsedData] = useState(null); // Holds the JSON from AI
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    // --- SUPER ADMIN STATE ---
+    const [targetRestaurantId, setTargetRestaurantId] = useState('');
+    const [restaurantList, setRestaurantList] = useState([]);
+    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
+    // 1. Fetch Restaurants (Only for Super Admin)
+    useEffect(() => {
+        if (isSuperAdmin) {
+            apiClient.get('/api/restaurants/all')
+                .then(data => setRestaurantList(data))
+                .catch(() => toast.error("Failed to load restaurant list."));
+        }
+    }, [isSuperAdmin]);
 
     // 1. Handle File Selection
     const handleFileChange = (event) => {
@@ -116,12 +132,23 @@ function MenuImporter() {
 
     // 4. Final Save to DB
     const handleSaveToDb = async () => {
+        if (isSuperAdmin && !targetRestaurantId) {
+            return toast.error("Please select a target restaurant.");
+        }
         setIsSaving(true);
+
+        // Construct payload with optional target ID
+        const payload = {
+            menuData: parsedData,
+            targetRestaurantId: isSuperAdmin ? targetRestaurantId : null
+        };
+
         try {
-            await apiClient.post('/api/menu-import/save', parsedData);
+            await apiClient.post('/api/menu-import/save', payload);
             toast.success("Menu successfully imported to database!");
             setParsedData(null); // Reset
             setFile(null);
+            if(isSuperAdmin) setTargetRestaurantId(''); // Reset selection
         } catch (error) {
             toast.error("Failed to save menu.");
         } finally {
@@ -134,28 +161,51 @@ function MenuImporter() {
             <Typography variant="h4" gutterBottom>AI Menu Auto-Import</Typography>
             
             <Paper sx={{ p: 4, mb: 4, textAlign: 'center', border: '2px dashed #ccc' }}>
-                <input
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    id="raised-button-file"
-                    type="file"
-                    onChange={handleFileChange}
-                />
-                <label htmlFor="raised-button-file">
-                    <Button variant="outlined" component="span" startIcon={<CloudUploadIcon />}>
-                        {file ? file.name : "Select Menu Image"}
-                    </Button>
-                </label>
-                <Box sx={{ mt: 2 }}>
-                    <Button 
-                        variant="contained" 
-                        onClick={handleParse} 
-                        disabled={!file || isLoading}
-                    >
-                        {isLoading ? "Analyzing with AI..." : "Upload & Analyze"}
-                    </Button>
+
+                {/* --- SUPER ADMIN SELECTOR --- */}
+                {isSuperAdmin && (
+                    <Box sx={{ mb: 4, maxWidth: 400, mx: 'auto' }}>
+                        <FormControl fullWidth>
+                            <InputLabel>Select Target Restaurant</InputLabel>
+                            <Select
+                                value={targetRestaurantId}
+                                label="Select Target Restaurant"
+                                onChange={(e) => setTargetRestaurantId(e.target.value)}
+                            >
+                                {restaurantList.map((r) => (
+                                    <MenuItem key={r.id} value={r.id}>
+                                        {r.name} (ID: {r.id})
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+                )}
+
+                <Box sx={{ textAlign: 'center' }}>
+                    <input
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        id="raised-button-file"
+                        type="file"
+                        onChange={handleFileChange}
+                    />
+                    <label htmlFor="raised-button-file">
+                        <Button variant="outlined" component="span" startIcon={<CloudUploadIcon />}>
+                            {file ? file.name : "Select Menu Image"}
+                        </Button>
+                    </label>
+                    <Box sx={{ mt: 2 }}>
+                        <Button 
+                            variant="contained" 
+                            onClick={handleParse} 
+                            disabled={!file || isLoading}
+                        >
+                            {isLoading ? "Analyzing with AI..." : "Upload & Analyze"}
+                        </Button>
+                    </Box>
+                    {isLoading && <CircularProgress sx={{ mt: 2 }} />}
                 </Box>
-                {isLoading && <CircularProgress sx={{ mt: 2 }} />}
             </Paper>
 
             {/* --- Review Section --- */}

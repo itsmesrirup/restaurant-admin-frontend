@@ -13,6 +13,7 @@ import UserManagement from './components/UserManagement';
 import AnalyticsPage from './components/AnalyticsPage';
 import MenuImporter from './components/MenuImporter';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import StripeCallbackPage from './components/StripeCallbackPage';
 import { Toaster } from 'react-hot-toast';
 
 // MUI components
@@ -73,23 +74,34 @@ function App() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
+    // --- 1. DEFINE STATE FIRST ---
+    // We need to initialize this first, but we can't use config.defaultView yet.
+    // So we initialize with a safe default or null.
+    const [view, setView] = useState('orders'); // Initialize with default
+
+    // --- 2. DEFINE CONFIG AFTER ---
+    // Now `setView` exists, so we can use it in the JSX inside `views`.
     const rolesConfig = {
         SUPER_ADMIN: {
             views: { 
                 super: <SuperAdminDashboard />,
-                commissions: <SuperAdminCommissionReport />
+                commissions: <SuperAdminCommissionReport />,
+                importMenu: <MenuImporter />
              },
             navItems: [
                 { textKey: 'adminPanel', view: 'super', icon: <SupervisedUserCircleIcon /> },
-                { textKey: 'globalCommissions', view: 'commissions', icon: <MonetizationOnIcon /> }
+                { textKey: 'globalCommissions', view: 'commissions', icon: <MonetizationOnIcon /> },
+                { textKey: 'importMenu', view: 'importMenu', icon: <CloudUploadIcon /> }
             ],
             defaultView: 'super'
         },
         ADMIN: {
             views: {
                 orders: <OrderDashboard />, kds: <KdsView />, analytics: <AnalyticsPage />,
-                menu: <MenuManagement />, importMenu: <MenuImporter />, category: <CategoryManagement />, specials: <SpecialsManagement />,
+                menu: <MenuManagement />, category: <CategoryManagement />, specials: <SpecialsManagement />,
                 reservations: <ReservationManagement />, users: <UserManagement />, website: <WebsitePage />, settings: <SettingsPage />,
+                // --- ADDED: The hidden view for the callback ---
+                stripeCallback: <StripeCallbackPage onViewChange={setView} />,
                 commissions: <CommissionPage />
             },
             navItems: (user = {}) => {
@@ -101,9 +113,8 @@ function App() {
                     { textKey: 'kitchenView', view: 'kds', icon: <DvrIcon />, feature: 'ORDERS' },
                     { textKey: 'analytics', view: 'analytics', icon: <BarChartIcon />, feature: 'ANALYTICS' },
                     { textKey: 'menuManagement', view: 'menu', icon: <RestaurantMenuIcon />, feature: 'MENU' },
-                    { textKey: 'importMenu', view: 'importMenu', icon: <CloudUploadIcon />, feature: 'MENU' },
                     { textKey: 'categoryManagement', view: 'category', icon: <CategoryIcon />, feature: 'MENU' },
-                    { textKey: 'specials', view: 'specials', icon: <StarIcon />, feature: 'MENU' },
+                    { textKey: 'specials', view: 'specials', icon: <StarIcon />, feature: 'SPECIALS' },
                     { textKey: 'reservations', view: 'reservations', icon: <EventSeatIcon />, feature: 'RESERVATIONS' },
                     { textKey: 'userManagement', view: 'users', icon: <PeopleIcon />, feature: 'ORDERS' },
                     { textKey: 'websitePage', view: 'website', icon: <GlobeIcon />, feature: 'WEBSITE_BUILDER' },
@@ -122,16 +133,36 @@ function App() {
         }
     };
 
+    // --- 3. HANDLE DEFAULT VIEW ---
+    // Now we can calculate the real default view
     const currentRole = user?.role || 'GUEST'; 
     const config = rolesConfig[currentRole] || { views: {}, navItems: [], defaultView: '' };
 
-    const [view, setView] = useState(config.defaultView);
-
     useEffect(() => {
         if (user) {
-            setView(rolesConfig[user.role]?.defaultView);
+            // Check for Stripe code FIRST
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('code')) {
+                setView('stripeCallback');
+            } else {
+                setView(rolesConfig[user.role]?.defaultView || 'orders');
+            }
         }
-    }, [user]);
+    }, [user]); // We rely on useEffect to set the correct initial view
+    
+    // --- ADDED: Check for Stripe Redirect on Initial Load ---
+    // If the URL has ?code=..., it means we are coming back from Stripe.
+    // We should set the initial view to 'stripeCallback'.
+    const getInitialView = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('code')) {
+            return 'stripeCallback';
+        }
+        // Default behavior
+        if (user?.role === 'SUPER_ADMIN') return 'super';
+        if (user?.role === 'KITCHEN_STAFF') return 'kds';
+        return 'orders';
+    };
     
     if (isLoading) {
         return <div>{t('loadingApp', 'Loading Application...')}</div>;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Switch, FormControlLabel, TextField, Button, Paper, Typography, Box, Grid, CircularProgress, Tooltip } from '@mui/material';
+import { Switch, FormControlLabel, TextField, Button, Paper, Typography, Box, Grid, CircularProgress, Tooltip, Alert } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import OpeningHoursEditor from './OpeningHoursEditor';
 
@@ -12,6 +12,18 @@ function SettingsPage() {
     const [fullSettings, setFullSettings] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+
+    // 1. Check if the PLAN allows it (from FeatureService via user object)
+    //const planAllowsPayments = user.availableFeatures?.includes('PAYMENTS');
+    
+    // 2. Check if SUPER ADMIN enabled it (from the restaurant settings)
+    //const masterSwitchOn = fullSettings?.paymentsEnabled;
+
+    // Only show if BOTH are true
+    //const showPaymentSection = planAllowsPayments && masterSwitchOn;
+    
+    // Only show if SUPER ADMIN enabled it
+    const showPaymentSection = fullSettings?.paymentsEnabled;
 
     const fetchAllSettings = useCallback(async () => {
         if (!user) return;
@@ -52,6 +64,17 @@ function SettingsPage() {
     // Handler specifically for the Opening Hours component
     const handleOpeningHoursChange = (newJsonString) => {
         setFullSettings(prev => ({ ...prev, openingHoursJson: newJsonString }));
+    };
+
+    // Handler to start the flow
+    const handleConnectStripe = async () => {
+        try {
+            const response = await apiClient.get('/api/payments/onboarding-link');
+            // Redirect the browser to Stripe
+            window.location.href = response.url;
+        } catch (error) {
+            toast.error("Failed to initiate Stripe connection");
+        }
     };
     
     if (isLoading || !fullSettings) {
@@ -167,6 +190,32 @@ function SettingsPage() {
                     </span>
                 </Tooltip>
             </Box>
+
+            {showPaymentSection && (
+                <>
+                    <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>Payments</Typography>
+                    <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            Connect your Stripe account to receive payments from online orders directly to your bank account.
+                        </Typography>
+                        
+                        {fullSettings.stripeDetailsSubmitted ? (
+                            <Alert severity="success">
+                                Stripe Connected! You are ready to accept payments.
+                            </Alert>
+                        ) : (
+                            <Button 
+                                variant="contained" 
+                                color="primary" 
+                                onClick={handleConnectStripe}
+                                sx={{ backgroundColor: '#6772e5' }} // Stripe Blurple color
+                            >
+                                Connect with Stripe
+                            </Button>
+                        )}
+                    </Box>
+                </>
+            )}
             
             <Box sx={{ mt: 3, position: 'relative' }}>
                 <Button variant="contained" onClick={handleSave} disabled={isSaving}>
