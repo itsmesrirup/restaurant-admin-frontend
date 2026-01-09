@@ -6,17 +6,20 @@ import {
     Divider, IconButton, List, ListItem, ListItemText, Switch, FormControlLabel,
     Chip
 } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useTranslation } from 'react-i18next';
 import CloneMenuModal from './CloneMenuModal';
+import usePageTitle from '../hooks/usePageTitle';
 
 const INITIAL_MENU_FORM_STATE = { title: '', subtitle: '', startDate: '', endDate: '', isActive: true };
 const INITIAL_ITEM_FORM_STATE = { dayTitle: '', name: '', description: '' };
 
 function SpecialsManagement() {
     const { t } = useTranslation();
+    usePageTitle(t('specials'));
     const { user } = useAuth();
     const [specialMenus, setSpecialMenus] = useState([]);
     const [selectedMenu, setSelectedMenu] = useState(null);
@@ -28,6 +31,10 @@ function SpecialsManagement() {
     // --- ADDED: State for the clone modal ---
     const [cloneModalOpen, setCloneModalOpen] = useState(false);
     const [menuToClone, setMenuToClone] = useState(null);
+
+    // --- ADDED: Dialog State for Deletion ---
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [menuToDelete, setMenuToDelete] = useState(null);
 
     const sortItemsByDay = (items = []) => {
         const dayOrder = { "LUNDI": 1, "MARDI": 2, "MERCREDI": 3, "JEUDI": 4, "VENDREDI": 5, "SAMEDI": 6, "DIMANCHE": 7 };
@@ -119,19 +126,28 @@ function SpecialsManagement() {
         });
     };
 
-    // --- New handler for deleting an entire special menu ---
-    const handleDeleteMenu = (menuId) => {
-        if (!window.confirm(t("confirmDeleteMenu"))) return;
+    // --- UPDATED: Open Dialog instead of window.confirm ---
+    const handleDeleteClick = (menuId) => {
+        setMenuToDelete(menuId);
+        setDeleteDialogOpen(true);
+    };
 
-        const promise = apiClient.delete(`/api/special-menus/${menuId}`);
+    // --- NEW: Confirm Delete Action ---
+    const confirmDelete = () => {
+        if (!menuToDelete) return;
+
+        const promise = apiClient.delete(`/api/special-menus/${menuToDelete}`);
         toast.promise(promise, {
             loading: t('deletingMenu'),
             success: () => {
-                fetchSpecialMenus(); // Refresh the list from the server
+                fetchSpecialMenus();
                 return t('menuDeleted');
             },
             error: (err) => err.message || t('failedToDeleteMenu')
         });
+        
+        setDeleteDialogOpen(false);
+        setMenuToDelete(null);
     };
 
     const handleEditMenu = (menu) => {
@@ -263,7 +279,7 @@ function SpecialsManagement() {
                                         <IconButton aria-label="edit" onClick={() => handleEditMenu(menu)}>
                                             <EditIcon />
                                         </IconButton>
-                                        <IconButton aria-label={t('delete')} title={t('delete')} onClick={() => handleDeleteMenu(menu.id)} color="error">
+                                        <IconButton aria-label={t('delete')} title={t('delete')} onClick={() => handleDeleteClick(menu.id)} color="error">
                                             <DeleteIcon />
                                         </IconButton>
                                         <Button 
@@ -343,6 +359,24 @@ function SpecialsManagement() {
                 menuToClone={menuToClone}
                 onConfirm={handleConfirmClone}
             />
+            {/* --- ADDED: The Delete Confirmation Dialog --- */}
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+            >
+                <DialogTitle>{t('delete')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t("confirmDeleteMenu")} {/* "Are you sure you want to delete this entire special menu...?" */}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)}>{t('cancel')}</Button>
+                    <Button onClick={confirmDelete} color="error" variant="contained" autoFocus>
+                        {t('delete')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

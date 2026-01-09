@@ -2,8 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { Switch, FormControlLabel, Checkbox, Paper, Typography, Box, TextField, Button, Select, MenuItem, Grid, FormControl, InputLabel, Divider } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import MenuItemOptionsModal from './MenuItemOptionsModal';
 import { useTranslation } from 'react-i18next';
+import { formatPrice } from '../utils/formatPrice';
+import usePageTitle from '../hooks/usePageTitle';
 
 const renderCategoryOptions = (categories, level = 0) => {
     let options = [];
@@ -20,6 +23,7 @@ const INITIAL_FORM_STATE = { name: '', price: '', description: '', categoryId: '
 
 function MenuManagement() {
     const { t } = useTranslation();
+    usePageTitle(t('menuManagement'));
     const { user } = useAuth();
     const [menuItems, setMenuItems] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -30,6 +34,10 @@ function MenuManagement() {
     const [optionsModalOpen, setOptionsModalOpen] = useState(false);
     const [currentItemForOptions, setCurrentItemForOptions] = useState(null);
     const [isModalLoading, setIsModalLoading] = useState(false);
+
+    // --- ADDED: Dialog State ---
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
 
     const fetchAllData = useCallback(async () => {
         if (!user) return;
@@ -84,14 +92,24 @@ function MenuManagement() {
         });
     };
 
-    const handleDelete = (itemId) => {
-        if (!window.confirm("Are you sure you want to delete this item?")) return;
-        const promise = apiClient.delete(`/api/menu-items/${itemId}`);
-        toast.promise(promise, {
-            loading: 'Deleting...',
-            success: () => { fetchAllData(); return 'Item deleted!'; },
-            error: (err) => err.message
-        });
+    // --- UPDATED: Open Dialog ---
+    const handleDeleteClick = (itemId) => {
+        setItemToDelete(itemId);
+        setDeleteDialogOpen(true);
+    };
+
+    // --- NEW: Confirm Delete ---
+    const confirmDelete = () => {
+        if (itemToDelete) {
+            const promise = apiClient.delete(`/api/menu-items/${itemToDelete}`);
+            toast.promise(promise, {
+                loading: t('deleting'),
+                success: () => { fetchAllData(); return t('itemDeleted'); },
+                error: (err) => err.message
+            });
+        }
+        setDeleteDialogOpen(false);
+        setItemToDelete(null);
     };
     
     const handleAvailabilityToggle = (itemId, currentStatus) => {
@@ -255,17 +273,37 @@ function MenuManagement() {
                                 <strong>{item.name}</strong> 
                                 {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule)</span>}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">{item.categoryName || t('uncategorized')} - ${item.price?.toFixed(2)}</Typography>
+                            <Typography variant="caption" color="text.secondary">{item.categoryName || t('uncategorized')} - {formatPrice(item.price, 'EUR')}</Typography>
                         </Grid>
                         <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                             <FormControlLabel control={<Switch size="small" checked={item.isAvailable} onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)}/>} label={t('available')} />
                             <Button size="small" variant="outlined" onClick={() => handleEdit(item)}>{t('edit')}</Button>
                             {item.bundle && <Button size="small" variant="contained" onClick={() => openOptionsManager(item)}>{t('manageChoices')}</Button>}
-                            <Button size="small" variant="outlined" color="error" onClick={() => handleDelete(item.id)}>{t('delete')}</Button>
+                            <Button size="small" variant="outlined" color="error" onClick={() => handleDeleteClick(item.id)}>{t('delete')}</Button>
                         </Grid>
                     </Grid>
                 </Paper>
             ))}
+
+            {/* --- ADDED: The Dialog Component --- */}
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+            >
+                <DialogTitle>{t('delete')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t("confirmDeleteItemPrompt")} {/* "Are you sure you want to delete this item?" */}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)}>{t('cancel')}</Button>
+                    <Button onClick={confirmDelete} color="error" variant="contained" autoFocus>
+                        {t('delete')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             <MenuItemOptionsModal 
                 open={optionsModalOpen} 
                 handleClose={() => setOptionsModalOpen(false)} 

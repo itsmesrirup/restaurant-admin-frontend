@@ -8,6 +8,7 @@ import {
     List, ListItem, ListItemText, IconButton,
     Select, MenuItem, FormControl, InputLabel, Collapse
 } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 // --- ADDED: Import Material-UI icons for a professional look ---
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -15,6 +16,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ChevronRight from '@mui/icons-material/ChevronRight';
+import usePageTitle from '../hooks/usePageTitle';
 
 // --- ADDED: A recursive function to generate indented <MenuItem>s for the dropdown ---
 // This makes the subcategory hierarchy clear when selecting a parent.
@@ -94,12 +96,17 @@ const CategoryListItem = ({ category, level = 0, onUpdate, onDelete }) => {
 
 function CategoryManagement() {
     const { t } = useTranslation();
+    usePageTitle(t('categoryManagement'));
     const { user } = useAuth();
     const [categories, setCategories] = useState([]);
     const [isFetching, setIsFetching] = useState(true);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [parentCategoryId, setParentCategoryId] = useState(''); // For subcategories
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // --- ADDED: Dialog State ---
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [categoryToDelete, setCategoryToDelete] = useState(null);
 
     const fetchCategories = useCallback(async () => {
         if (!user) return;
@@ -151,17 +158,27 @@ function CategoryManagement() {
         });
     };
 
-    const handleDeleteCategory = (categoryId) => {
-        if (!window.confirm(t("confirmDeleteCategory"))) return;
-        const promise = apiClient.delete(`/api/categories/${categoryId}`);
-        toast.promise(promise, {
-            loading: t('deletingCategory'),
-            success: () => {
-                fetchCategories();
-                return t('categoryDeleted');
-            },
-            error: (err) => err.message
-        });
+    // --- UPDATED: Open Dialog ---
+    const handleDeleteClick = (categoryId) => {
+        setCategoryToDelete(categoryId);
+        setDeleteDialogOpen(true);
+    };
+
+    // --- NEW: Confirm Delete ---
+    const confirmDelete = () => {
+        if (categoryToDelete) {
+            const promise = apiClient.delete(`/api/categories/${categoryToDelete}`);
+            toast.promise(promise, {
+                loading: t('deletingCategory'),
+                success: () => {
+                    fetchCategories();
+                    return t('categoryDeleted');
+                },
+                error: (err) => err.message
+            });
+        }
+        setDeleteDialogOpen(false);
+        setCategoryToDelete(null);
     };
 
     if (isFetching) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
@@ -228,12 +245,30 @@ function CategoryManagement() {
                                 key={cat.id} 
                                 category={cat} 
                                 onUpdate={handleUpdateCategory}
-                                onDelete={handleDeleteCategory}
+                                onDelete={handleDeleteClick}
                             />
                         ))}
                     </List>
                 )}
             </Paper>
+            {/* --- ADDED: The Dialog Component --- */}
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+            >
+                <DialogTitle>{t('delete')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t("confirmDeleteCategory")} {/* "Are you sure? This deletes subcategories/items..." */}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)}>{t('cancel')}</Button>
+                    <Button onClick={confirmDelete} color="error" variant="contained" autoFocus>
+                        {t('delete')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

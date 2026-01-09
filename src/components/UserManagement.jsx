@@ -4,9 +4,11 @@ import { toast } from 'react-hot-toast';
 import { Paper, Typography, Box, TextField, Button, Grid, Divider, List, ListItem, ListItemText, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useTranslation } from 'react-i18next';
+import usePageTitle from '../hooks/usePageTitle';
 
 function UserManagement() {
     const { t } = useTranslation();
+    usePageTitle(t('userManagement'));
     const { user } = useAuth();
     const [staff, setStaff] = useState([]);
     const [isLoading, setIsLoading] = useState(true);

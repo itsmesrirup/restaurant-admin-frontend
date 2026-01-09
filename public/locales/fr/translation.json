@@ -32,7 +32,7 @@
   "edit": "Modifier",
   "delete": "Supprimer",
   "nameCannotBeEmpty": "Le nom ne peut pas être vide.",
-  "confirmDeleteCategory": "Êtes-vous sûr ? La suppression d'une catégorie est permanente et ne fonctionne que si elle est vide.",
+  "confirmDeleteCategory": "AVERTISSEMENT : Cette action supprimera la catégorie ET TOUS les éléments de menu/sous-catégories qu’elle contient. Cette action est irréversible. Continuer ?",
   "creatingCategory": "Création de la catégorie...",
   "categoryCreated": "Catégorie créée avec succès !",
   "updatingCategory": "Mise à jour de la catégorie...",
@@ -243,5 +243,9 @@
   "confirmCancellationTitle": "Annuler la commande ?",
   "confirmCancellationText": "Êtes-vous sûr de vouloir annuler cette commande ? Si le client a payé en ligne, il sera automatiquement remboursé. Cette action est irréversible.",
   "keepOrder": "Non, conserver la commande",
-  "confirmCancel": "Oui, annuler la commande"
+  "confirmCancel": "Oui, annuler la commande",
+  "paymentsSectionTitle": "Paiements",
+  "connectStripeDesc": "Connectez votre compte Stripe pour recevoir les paiements des commandes en ligne directement sur votre compte bancaire.",
+  "stripeConnectedSuccess": "Stripe Connecté ! Vous êtes prêt à accepter des paiements.",
+  "connectWithStripe": "Se connecter avec Stripe"
 }

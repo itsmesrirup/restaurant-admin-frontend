@@ -4,10 +4,12 @@ import { toast } from 'react-hot-toast';
 import { Switch, FormControlLabel, TextField, Button, Paper, Typography, Box, Grid, CircularProgress, Tooltip, Alert } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import OpeningHoursEditor from './OpeningHoursEditor';
+import usePageTitle from '../hooks/usePageTitle';
 
 function SettingsPage() {
     const { user } = useAuth();
     const { t } = useTranslation();
+    usePageTitle(t('settings')); // "Settings | Tablo"
     // Initialize state with all possible fields to prevent runtime errors
     const [fullSettings, setFullSettings] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -21,7 +23,7 @@ function SettingsPage() {
 
     // Only show if BOTH are true
     //const showPaymentSection = planAllowsPayments && masterSwitchOn;
-    
+
     // Only show if SUPER ADMIN enabled it
     const showPaymentSection = fullSettings?.paymentsEnabled;
 
@@ -193,15 +195,15 @@ function SettingsPage() {
 
             {showPaymentSection && (
                 <>
-                    <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>Payments</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>{t('paymentsSectionTitle')}</Typography>
                     <Box sx={{ mb: 2 }}>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                            Connect your Stripe account to receive payments from online orders directly to your bank account.
+                            {t('connectStripeDesc')}
                         </Typography>
                         
                         {fullSettings.stripeDetailsSubmitted ? (
                             <Alert severity="success">
-                                Stripe Connected! You are ready to accept payments.
+                                {t('stripeConnectedSuccess')}
                             </Alert>
                         ) : (
                             <Button 
@@ -210,7 +212,7 @@ function SettingsPage() {
                                 onClick={handleConnectStripe}
                                 sx={{ backgroundColor: '#6772e5' }} // Stripe Blurple color
                             >
-                                Connect with Stripe
+                                {t('connectWithStripe')}
                             </Button>
                         )}
                     </Box>

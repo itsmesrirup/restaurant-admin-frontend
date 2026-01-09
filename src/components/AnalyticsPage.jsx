@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { Paper, Typography, Grid, Box, CircularProgress, Alert } from '@mui/material';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import usePageTitle from '../hooks/usePageTitle';
 
 const StatCard = ({ title, value, prefix = '', t }) => (
     <Paper elevation={3} sx={{ p: 2, textAlign: 'center', height: '100%' }}>
@@ -14,6 +15,7 @@ const StatCard = ({ title, value, prefix = '', t }) => (
 
 function AnalyticsPage() {
     const { t } = useTranslation();
+    usePageTitle(t('analytics'));
     const { user } = useAuth();
     const [summary, setSummary] = useState(null);
     const [topItems, setTopItems] = useState([]);

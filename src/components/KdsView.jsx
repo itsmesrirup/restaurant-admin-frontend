@@ -6,9 +6,11 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime'; // Import
 import notificationSound from '/notification.mp3'; 
 import { useTranslation } from 'react-i18next';
+import usePageTitle from '../hooks/usePageTitle';
 
 function KdsView() {
     const { t } = useTranslation();
+    usePageTitle(t('kitchenView')); // "Kitchen View | Tablo"
     const { user } = useAuth();
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);

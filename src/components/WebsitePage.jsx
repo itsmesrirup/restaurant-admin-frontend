@@ -5,9 +5,11 @@ import { toast } from 'react-hot-toast';
 import { Paper, Typography, Box, TextField, Button, Grid, CircularProgress, Alert, IconButton, Stack, Divider } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import usePageTitle from '../hooks/usePageTitle';
 
 function WebsitePage() {
     const { t } = useTranslation();
+    usePageTitle(t('websitePage'));
     const { user } = useAuth();
     const [formData, setFormData] = useState({
         aboutUsText: '', phoneNumber: '', openingHours: '', googleMapsUrl: '', slug: '', instagramUrl: '', facebookUrl: '', twitterUrl: ''

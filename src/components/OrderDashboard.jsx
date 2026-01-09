@@ -5,9 +5,11 @@ import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Div
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import usePageTitle from '../hooks/usePageTitle';
 
 function OrderDashboard() {
     const { t } = useTranslation();
+    usePageTitle(t('liveOrders')); // "Live Orders | Tablo"
     const { user } = useAuth();
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);

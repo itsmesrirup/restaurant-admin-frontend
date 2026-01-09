@@ -32,7 +32,7 @@
   "edit": "Edit",
   "delete": "Delete",
   "nameCannotBeEmpty": "Name cannot be empty.",
-  "confirmDeleteCategory": "Are you sure? Deleting a category is permanent and only works if it's empty.",
+  "confirmDeleteCategory": "WARNING: This will delete the category AND ALL menu items/subcategories inside it. This action cannot be undone. Continue?",
   "creatingCategory": "Creating category...",
   "categoryCreated": "Category created successfully!",
   "updatingCategory": "Updating category...",
@@ -242,5 +242,9 @@
   "confirmCancellationTitle": "Cancel Order?",
   "confirmCancellationText": "Are you sure you want to cancel this order? If the customer paid online, they will be automatically refunded. This action cannot be undone.",
   "keepOrder": "No, Keep Order",
-  "confirmCancel": "Yes, Cancel Order"
+  "confirmCancel": "Yes, Cancel Order",
+  "paymentsSectionTitle": "Payments",
+  "connectStripeDesc": "Connect your Stripe account to receive payments from online orders directly to your bank account.",
+  "stripeConnectedSuccess": "Stripe Connected! You are ready to accept payments.",
+  "connectWithStripe": "Connect with Stripe"
 }
