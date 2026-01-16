@@ -19,11 +19,13 @@ export const apiClient = {
     // --- CHANGED: Added isFormData parameter ---
     getAuthHeaders: (isFormData = false) => {
         const token = localStorage.getItem('authToken');
-        const headers = {
-            'Authorization': `Bearer ${token}`,
-        };
-        // --- CHANGED: Only set JSON content type if it's NOT FormData ---
-        // Let the browser set the Content-Type (including boundary) for FormData automatically.
+        const headers = {};
+        
+        // --- FIX: Only add Authorization if token exists and is valid ---
+        if (token && token !== 'null' && token !== 'undefined') {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         if (!isFormData) {
             headers['Content-Type'] = 'application/json';
         }
@@ -36,11 +38,14 @@ export const apiClient = {
     },
 
     // --- CHANGED: Check for FormData and pass correct headers ---
-    post: async function(path, body) {
+    post: async function(path, body, customConfig = {}) { // Add customConfig
         const isFormData = body instanceof FormData;
         const response = await fetch(`${API_BASE_URL}${path}`, { 
             method: 'POST', 
-            headers: this.getAuthHeaders(isFormData), 
+            headers: {
+                ...this.getAuthHeaders(isFormData),
+                ...customConfig.headers // Merge custom headers
+            }, 
             body: isFormData ? body : JSON.stringify(body) 
         });
         return this.handleResponse(response);

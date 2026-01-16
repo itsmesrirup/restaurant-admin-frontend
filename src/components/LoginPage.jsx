@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Container, Paper, Typography, TextField, Button, Box, CircularProgress } from '@mui/material';
+import { Container, Paper, Typography, TextField, Button, Box, CircularProgress, Link } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+import LanguageSwitcher from './LanguageSwitcher';
 
 function LoginPage() {
     // --- ADDED: Get t function ---
@@ -29,6 +31,9 @@ function LoginPage() {
     // --- CHANGED: The entire return statement is now using Material-UI components ---
     return (
         <Container component="main" maxWidth="xs" sx={{ mt: 8 }}>
+            <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+                <LanguageSwitcher />
+            </Box>
             <Paper elevation={6} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography component="h1" variant="h5">
                     {t('loginTitle')}
@@ -58,6 +63,12 @@ function LoginPage() {
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                     />
+                    {/* --- ADDED: Forgot Password Link --- */}
+                    <Box sx={{ textAlign: 'right', mt: 1 }}>
+                        <Link component={RouterLink} to="/forgot-password" variant="body2">
+                            {t('forgotPassword')}
+                        </Link>
+                    </Box>
                     <Box sx={{ mt: 3, mb: 2, position: 'relative' }}>
                         <Button
                             type="submit"

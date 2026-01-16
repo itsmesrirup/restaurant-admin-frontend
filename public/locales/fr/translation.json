@@ -247,5 +247,15 @@
   "paymentsSectionTitle": "Paiements",
   "connectStripeDesc": "Connectez votre compte Stripe pour recevoir les paiements des commandes en ligne directement sur votre compte bancaire.",
   "stripeConnectedSuccess": "Stripe Connecté ! Vous êtes prêt à accepter des paiements.",
-  "connectWithStripe": "Se connecter avec Stripe"
+  "connectWithStripe": "Se connecter avec Stripe",
+  "forgotPassword": "Mot de passe oublié ?",
+  "forgotPasswordTitle": "Mot de passe oublié",
+  "enterEmail": "Entrez votre email",
+  "invalidEmailFormat": "Format d'email invalide",
+  "sendResetLink": "Envoyer le lien de réinitialisation",
+  "resetLinkSent": "Lien envoyé !",
+  "errorSendingEmail": "Erreur lors de l'envoi de l'email.",
+  "checkYourEmail": "Vérifiez vos emails",
+  "resetEmailSentMessage": "Nous avons envoyé un lien de réinitialisation à {{email}}.",
+  "backToLogin": "Retour à la connexion"
 }

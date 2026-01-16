@@ -14,7 +14,11 @@ import AnalyticsPage from './components/AnalyticsPage';
 import MenuImporter from './components/MenuImporter';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import StripeCallbackPage from './components/StripeCallbackPage';
+import ForgotPasswordPage from './components/ForgotPasswordPage';
+import ResetPasswordPage from './components/ResetPasswordPage';
+import LanguageSwitcher from './components/LanguageSwitcher';
 import { Toaster } from 'react-hot-toast';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 // MUI components
 import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, Divider, Button, AppBar, Toolbar, IconButton, useTheme, useMediaQuery } from '@mui/material';
@@ -40,32 +44,6 @@ import CommissionPage from './components/CommissionPage';
 import SuperAdminCommissionReport from './components/SuperAdminCommissionReport';
 
 const drawerWidth = 240;
-
-// --- Language Switcher Component ---
-const LanguageSwitcher = () => {
-    const { i18n } = useTranslation();
-
-    return (
-        <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button 
-                variant={i18n.language === 'en' ? 'contained' : 'outlined'} 
-                onClick={() => i18n.changeLanguage('en')}
-                size="small"
-                sx={{ color: 'white', borderColor: 'rgba(255, 255, 255, 0.5)', minWidth: '40px' }}
-            >
-                EN
-            </Button>
-            <Button 
-                variant={i18n.language === 'fr' ? 'contained' : 'outlined'} 
-                onClick={() => i18n.changeLanguage('fr')}
-                size="small"
-                sx={{ color: 'white', borderColor: 'rgba(255, 255, 255, 0.5)', minWidth: '40px' }}
-            >
-                FR
-            </Button>
-        </Box>
-    );
-};
 
 function App() {
     const { t } = useTranslation();
@@ -168,14 +146,29 @@ function App() {
         return <div>{t('loadingApp', 'Loading Application...')}</div>;
     }
 
+    // --- UPDATED: Unauthenticated Routes ---
     if (!token) {
         return (
             <>
                 <Toaster position="top-center" />
-                <LoginPage />
+                {/* 
+                   We need a Router here because ForgotPassword and ResetPassword 
+                   are separate pages with their own URLs.
+                */}
+                <Router>
+                    <Routes>
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                        <Route path="/reset-password" element={<ResetPasswordPage />} />
+                        
+                        {/* Default redirect to login */}
+                        <Route path="*" element={<Navigate to="/login" replace />} />
+                    </Routes>
+                </Router>
             </>
         );
     }
+
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
@@ -263,8 +256,8 @@ function App() {
                         {currentViewTitle}
                     </Typography>
                     {/* Desktop Language Switcher (Top Right) */}
-                    <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-                         <LanguageSwitcher />
+                    <Box sx={{ display: { xs: 'none', md: 'block' }, color: 'white' }}> {/* Added color: white */}
+                        <LanguageSwitcher />
                     </Box>
                 </Toolbar>
             </AppBar>

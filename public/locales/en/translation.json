@@ -246,5 +246,15 @@
   "paymentsSectionTitle": "Payments",
   "connectStripeDesc": "Connect your Stripe account to receive payments from online orders directly to your bank account.",
   "stripeConnectedSuccess": "Stripe Connected! You are ready to accept payments.",
-  "connectWithStripe": "Connect with Stripe"
+  "connectWithStripe": "Connect with Stripe",
+  "forgotPassword": "Forgot password?",
+  "forgotPasswordTitle": "Forgot Password",
+  "enterEmail": "Enter your email",
+  "invalidEmailFormat": "Invalid email format",
+  "sendResetLink": "Send Reset Link",
+  "resetLinkSent": "Reset link sent!",
+  "errorSendingEmail": "Error sending email.",
+  "checkYourEmail": "Check your email",
+  "resetEmailSentMessage": "We've sent a password reset link to {{email}}.",
+  "backToLogin": "Back to Login"
 }
