@@ -98,6 +98,19 @@ function SettingsPage() {
                 <Grid item xs={12} sm={6}>
                     <TextField label={t('restaurantName')} name="name" value={fullSettings.name || ''} onChange={handleInputChange} fullWidth />
                 </Grid>
+
+                {/* --- The Slug Field --- */}
+                <Grid item xs={12} sm={6}>
+                    <TextField 
+                        label="URL Slug" 
+                        name="slug" 
+                        value={fullSettings.slug || ''} 
+                        onChange={handleInputChange} 
+                        fullWidth 
+                        helperText={`Your ordering link: tablo.io/order/${fullSettings.slug || '...'}`}
+                    />
+                </Grid>
+
                 <Grid item xs={12} sm={6}>
                     <TextField label={t('address')} name="address" value={fullSettings.address || ''} onChange={handleInputChange} fullWidth />
                 </Grid>

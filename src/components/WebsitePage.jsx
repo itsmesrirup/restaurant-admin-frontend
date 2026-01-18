@@ -85,12 +85,9 @@ function WebsitePage() {
                 <Alert severity="info" sx={{ mb: 2 }}>
                     {t('readOnlyUpgradePrompt')}
                 </Alert>
-                {/* A read-only view so the user knows their data is safe */}
-                <Box mt={3}>
-                    <Typography gutterBottom><strong>{t('readOnlySlug')}</strong> {fullSettings.slug || t('notSet')}</Typography>
-                    <Typography gutterBottom><strong>{t('readOnlyPhone')}</strong> {fullSettings.phoneNumber || t('notSet')}</Typography>
-                    <Typography gutterBottom><strong>{t('readOnlyHours')}</strong> {fullSettings.openingHours || t('notSet')}</Typography>
-                </Box>
+                <Typography variant="body2" sx={{ mt: 2 }}>
+                   Upgrade to access the Website Editor, SEO tools, and Gallery management.
+                </Typography>
             </Paper>
         );
     }
@@ -110,9 +107,6 @@ function WebsitePage() {
                 </Grid>
 
                 <Grid item xs={12}><Typography variant="h6" color="text.secondary" sx={{ mt: 2 }}>Content</Typography></Grid>
-                <Grid item xs={12}>
-                    <TextField name="slug" label={t('websiteSlugLabel')} value={fullSettings.slug || ''} onChange={handleInputChange} fullWidth helperText={t('websiteSlugHelper', { slug: fullSettings.slug || '...' })} />
-                </Grid>
                 <Grid item xs={12}>
                     <TextField name="aboutUsText" label={t('aboutUs')} value={fullSettings.aboutUsText || ''} onChange={handleInputChange} fullWidth multiline rows={6} helperText={t('aboutUsHelper')} />
                 </Grid>
