@@ -257,5 +257,15 @@
   "errorSendingEmail": "Erreur lors de l'envoi de l'email.",
   "checkYourEmail": "Vérifiez vos emails",
   "resetEmailSentMessage": "Nous avons envoyé un lien de réinitialisation à {{email}}.",
-  "backToLogin": "Retour à la connexion"
+  "backToLogin": "Retour à la connexion",
+  "printReportPdf": "Imprimer le Rapport (PDF)",
+  "salesReportTitle": "Rapport des ventes",
+  "sales": "Ventes",
+  "generatedByTablo": "Généré par Tablo",
+  "topSellingItems": "Articles les plus vendus",
+  "hourlyBreakdownTitle": "Répartition Horaire (Heures de Pointe)",
+  "timeOfDay": "Heure",
+  "noDataAvailable": "Aucune donnée disponible pour cette période",
+  "dailyBreakdown": "Répartition quotidienne",
+  "averageOrderValueReport": "Panier Moyen"
 }
