@@ -164,7 +164,7 @@ function AnalyticsPage() {
                 />
             </div>
             
-            <Grid container spacing={3}>
+            <Grid container spacing={3} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={4}>
                     {/* --- CHANGED: Use translation key and dynamic currency, pass t --- */}
                     <StatCard title="totalRevenue" value={summary.totalRevenue.toFixed(2)} prefix="€" t={t} />
