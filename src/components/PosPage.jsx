@@ -3,19 +3,19 @@ import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { 
     Box, Paper, Typography, Button, TextField, Chip, CircularProgress, 
-    IconButton, Drawer, Badge, useTheme, useMediaQuery, Fab, Stack 
+    IconButton, Drawer, Badge, useTheme, useMediaQuery, Fab, Grid 
 } from '@mui/material';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
 import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CloseIcon from '@mui/icons-material/Close';
-import { useTranslation } from 'react-i18next'; // Import translation hook
+import { useTranslation } from 'react-i18next';
 
 function PosPage() {
-    const { t } = useTranslation(); // Initialize translation
+    const { t } = useTranslation();
     const { user } = useAuth();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md')); 
@@ -127,17 +127,18 @@ function PosPage() {
                 display: 'flex', 
                 flexDirection: 'column', 
                 borderRadius: isMobile ? 0 : 2, 
-                overflow: 'hidden' 
+                overflow: 'hidden',
+                border: isMobile ? 'none' : undefined
             }}
         >
             {/* Header */}
             <Box sx={{ p: 2, bgcolor: isTableOccupied ? '#fff3e0' : 'grey.100', borderBottom: '1px solid #ddd' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6">
+                    <Typography variant="h6" noWrap>
                         {isTableOccupied ? t('posUpdatingTable', { number: tableNumber }) : t('posNewOrder')}
                     </Typography>
                     {isMobile && (
-                        <IconButton onClick={() => setMobileTicketOpen(false)}>
+                        <IconButton onClick={() => setMobileTicketOpen(false)} size="small">
                             <CloseIcon />
                         </IconButton>
                     )}
@@ -152,7 +153,7 @@ function PosPage() {
                         size="small" 
                         sx={{ bgcolor: 'white' }}
                         type="number"
-                        placeholder="e.g. 5"
+                        placeholder="5"
                         color={isTableOccupied ? "warning" : "primary"}
                     />
                     {isTableOccupied && (
@@ -176,11 +177,11 @@ function PosPage() {
                 ) : (
                     currentOrder.map(item => (
                         <Box key={item.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 2, borderBottom: '1px dashed #eee' }}>
-                            <Box sx={{ flex: 1 }}>
-                                <Typography variant="body1" fontWeight="bold">{item.name}</Typography>
+                            <Box sx={{ flex: 1, overflow: 'hidden', mr: 1 }}>
+                                <Typography variant="body1" fontWeight="bold" noWrap>{item.name}</Typography>
                                 <Typography variant="caption" color="text.secondary">€{(item.price * item.qty).toFixed(2)}</Typography>
                             </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                                 <IconButton size="small" onClick={() => updateQty(item.id, -1)} color="error"><RemoveCircleOutlineIcon /></IconButton>
                                 <Typography sx={{ mx: 1, fontWeight: 'bold', minWidth: '20px', textAlign: 'center' }}>{item.qty}</Typography>
                                 <IconButton size="small" onClick={() => updateQty(item.id, 1)} color="primary"><AddCircleOutlineIcon /></IconButton>
@@ -190,36 +191,44 @@ function PosPage() {
                 )}
             </Box>
 
-            {/* Footer - UPDATED WITH VERTICAL STACK */}
+            {/* Footer - COMPACT LAYOUT */}
             <Box sx={{ p: 2, borderTop: '1px solid #ddd', bgcolor: 'grey.50' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Typography variant="h6">{t('posTotal')}</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                    <Typography variant="subtitle1">{t('posTotal')}</Typography>
                     <Typography variant="h6" fontWeight="bold">€{calculateTotal().toFixed(2)}</Typography>
                 </Box>
-                {/* Changed to Vertical Stack to fix layout issues with long French text */}
-                <Stack spacing={1}>
-                    <Button 
-                        variant="contained" 
-                        color={isTableOccupied ? "warning" : "success"}
-                        fullWidth 
-                        size="large"
-                        onClick={handleSendOrder}
-                        disabled={isSending || currentOrder.length === 0}
-                        startIcon={isSending ? <CircularProgress size={20} color="inherit"/> : <SendIcon />}
-                        sx={{ py: 1.5, fontSize: '1.1rem', fontWeight: 'bold' }}
-                    >
-                        {isTableOccupied ? t('posAppend') : t('posSend')}
-                    </Button>
-                    <Button 
-                        variant="outlined" 
-                        color="error" 
-                        fullWidth 
-                        onClick={clearOrder} 
-                        startIcon={<DeleteIcon />}
-                    >
-                        {t('posClear')}
-                    </Button>
-                </Stack>
+                
+                {/* Horizontal Grid Layout for buttons: [Clear (Small)] [Send (Big)] */}
+                <Grid container spacing={1}>
+                    <Grid item xs={4}>
+                        <Button 
+                            variant="outlined" 
+                            color="error" 
+                            fullWidth 
+                            onClick={clearOrder} 
+                            // Only show icon on very small screens if text is too long, 
+                            // otherwise show text
+                            sx={{ height: '100%', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                        >
+                            {/* Shorten text if possible or use icon */}
+                            {t('posClear')} 
+                        </Button>
+                    </Grid>
+                    <Grid item xs={8}>
+                        <Button 
+                            variant="contained" 
+                            color={isTableOccupied ? "warning" : "success"}
+                            fullWidth 
+                            size="large"
+                            onClick={handleSendOrder}
+                            disabled={isSending || currentOrder.length === 0}
+                            startIcon={isSending ? <CircularProgress size={20} color="inherit"/> : <SendIcon />}
+                            sx={{ py: 1.2, fontSize: '1.1rem', fontWeight: 'bold' }}
+                        >
+                            {isTableOccupied ? t('posAppend') : t('posSend')}
+                        </Button>
+                    </Grid>
+                </Grid>
             </Box>
         </Paper>
     );
@@ -227,30 +236,39 @@ function PosPage() {
     if (isLoading) return <CircularProgress />;
 
     return (
-        // Adjusted height calculation to prevent double scrollbars
-        <Box sx={{ height: 'calc(100vh - 120px)', display: 'flex', gap: 2, overflow: 'hidden' }}>
+        // ✅ FIX 1: MaxWidth 100vw and overflow: hidden on the ROOT container
+        <Box sx={{ height: 'calc(100vh - 100px)', display: 'flex', width: '100%', maxWidth: '100vw', overflow: 'hidden' }}>
             
             {/* --- LEFT SIDE: MENU --- */}
-            <Box sx={{ flex: isMobile ? 1 : 7, display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0 }}>
+            {/* ✅ FIX 2: Removed gap on mobile to prevent overflow (handled by padding inside children) */}
+            <Box sx={{ 
+                flexGrow: 1, 
+                display: 'flex', 
+                flexDirection: 'column', 
+                height: '100%', 
+                minWidth: 0, 
+                pr: isMobile ? 0 : 2 
+            }}>
                 
                 {/* Filter Bar */}
-                <Box sx={{ mb: 2, overflowX: 'auto', display: 'flex', gap: 1, pb: 1, px: 2, flexShrink: 0, '&::-webkit-scrollbar': { display: 'none' }, msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+                <Box sx={{ mb: 2, overflowX: 'auto', display: 'flex', gap: 1, pb: 1, px: 1, flexShrink: 0, '&::-webkit-scrollbar': { display: 'none' }, msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
                     <Chip label="ALL" onClick={() => setSelectedCategory('ALL')} color={selectedCategory === 'ALL' ? "primary" : "default"} clickable sx={{ fontWeight: 'bold' }} />
                     {categories.map(cat => (
                         <Chip key={cat.id} label={cat.name} onClick={() => setSelectedCategory(cat.id)} color={selectedCategory === cat.id ? "primary" : "default"} clickable sx={{ fontWeight: 'bold' }} />
                     ))}
                 </Box>
 
-                {/* Grid - UPDATED BREAKPOINTS */}
-                <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, pb: isMobile ? 10 : 2 }}>
+                {/* Grid */}
+                {/* ✅ FIX 3: Reduced padding on mobile (p: 1) to gain space */}
+                <Box sx={{ flexGrow: 1, overflowY: 'auto', p: isMobile ? 1 : 2, pb: isMobile ? 10 : 2 }}>
                     <Box sx={{ 
                         display: 'grid',
                         gridTemplateColumns: {
                             xs: 'repeat(2, 1fr)',
                             sm: 'repeat(3, 1fr)',
-                            md: 'repeat(3, 1fr)', // ✅ Reduced from 4 to 3 to prevent overflow on tablets/small laptops
-                            lg: 'repeat(4, 1fr)', 
-                            xl: 'repeat(5, 1fr)'
+                            md: 'repeat(2, 1fr)', 
+                            lg: 'repeat(3, 1fr)', 
+                            xl: 'repeat(4, 1fr)'
                         },
                         gap: 1.5
                     }}>
@@ -300,15 +318,14 @@ function PosPage() {
                 </Box>
             </Box>
 
-            {/* --- RIGHT SIDE: TICKET --- */}
+            {/* --- RIGHT SIDE: TICKET (DESKTOP) --- */}
             {!isMobile && (
-                // ✅ Adjusted widths to prevent overflow
-                <Box sx={{ flex: 3, minWidth: '280px', maxWidth: '350px' }}>
+                <Box sx={{ width: '320px', flexShrink: 0 }}>
                     {TicketUI}
                 </Box>
             )}
 
-            {/* MOBILE DRAWER (Bottom Sheet) */}
+            {/* --- MOBILE DRAWER (BOTTOM SHEET) --- */}
             {isMobile && (
                 <>
                     <Fab 
@@ -328,13 +345,19 @@ function PosPage() {
                         onClose={() => setMobileTicketOpen(false)}
                         PaperProps={{
                             sx: { 
-                                height: '85vh', 
-                                borderTopLeftRadius: 20, 
-                                borderTopRightRadius: 20
+                                height: '80vh', 
+                                borderTopLeftRadius: 16, 
+                                borderTopRightRadius: 16,
+                                overflow: 'hidden'
                             }
                         }}
                     >
-                        <Box sx={{ height: '100%', overflow: 'hidden' }}>
+                        {/* 
+                           ✅ FIX 4: Explicit Height on the Drawer content box
+                           This ensures the footer sticks to the bottom of the drawer
+                           and the list scrolls within the remaining space.
+                        */}
+                        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                             {TicketUI}
                         </Box>
                     </Drawer>
