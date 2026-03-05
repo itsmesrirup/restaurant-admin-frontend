@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Paper, Typography, Box, TextField, Button, Grid, Divider, List, ListItem, ListItemText, IconButton } from '@mui/material';
+import { Paper, Typography, Box, TextField, Button, Grid, MenuItem, List, ListItem, ListItemText, IconButton, Select, FormControl, InputLabel } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useTranslation } from 'react-i18next';
 import usePageTitle from '../hooks/usePageTitle';
@@ -55,10 +55,27 @@ function UserManagement() {
         <Box>
             <Typography variant="h4" gutterBottom>{t('userManagementTitle')}</Typography>
             <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 3 }}>
-                <Typography variant="h6">{t('addKitchenStaff')}</Typography>
+                <Typography variant="h6">{t('addNewStaff')}</Typography>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
                     <Grid item xs={12} sm={5}><TextField label={t('email')} name="email" type="email" value={formData.email} onChange={handleInputChange} fullWidth required /></Grid>
                     <Grid item xs={12} sm={5}><TextField label={t('password')} name="password" type="password" value={formData.password} onChange={handleInputChange} fullWidth required /></Grid>
+                    <Grid item xs={12} sm={3}>
+                        <FormControl fullWidth size="medium">
+                            <InputLabel id="role-select-label">{t('role')}</InputLabel>
+                            <Select
+                                fullWidth
+                                id="role-select"
+                                labelId="role-select-label"
+                                value={formData.role}
+                                label={t('role')}
+                                onChange={e => setFormData({...formData, role: e.target.value})}
+                            >
+                                <MenuItem value="KITCHEN_STAFF">{t('kitchenStaff')}</MenuItem>
+                                <MenuItem value="WAITER">{t('waiter')}</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    
                     <Grid item xs={12} sm={2}><Button type="submit" variant="contained" fullWidth sx={{ height: '100%' }}>{t('addStaff')}</Button></Grid>
                 </Grid>
             </Paper>

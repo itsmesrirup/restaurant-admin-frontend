@@ -7,6 +7,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime'; // Import
 import notificationSound from '/notification.mp3'; 
 import { useTranslation } from 'react-i18next';
 import usePageTitle from '../hooks/usePageTitle';
+import { useOrderWebSocket } from '../hooks/useOrderWebSocket';
 
 function KdsView() {
     const { t } = useTranslation();
@@ -17,58 +18,42 @@ function KdsView() {
     const audio = useMemo(() => new Audio(notificationSound), []);
     const previousOrderCount = useRef(0);
 
-    const fetchKitchenOrders = useCallback(async () => {
-        if (!user) return;
-        try {
-            const data = await apiClient.get('/api/orders/by-restaurant/kitchen');
-            
-            // --- IMPROVED SORTING ---
-            // 1. Scheduled items closest to pickup time first
-            // 2. Then ASAP items by ID
-            data.sort((a, b) => {
-                if (a.pickupTime && b.pickupTime) return new Date(a.pickupTime) - new Date(b.pickupTime);
-                if (a.pickupTime) return 1; // Push scheduled to the end (or -1 to put them first, your choice)
-                if (b.pickupTime) return -1;
-                return a.id - b.id;
-            });
-            
-            if (previousOrderCount.current > 0 && data.length > orders.length) {
-                audio.play().catch(e => console.error("Audio playback failed:", e));
-            }
-            
-            setOrders(data);
-            previousOrderCount.current = data.length;
-
-        } catch (error) {
-            console.error("Failed to fetch KDS orders:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [user, audio, orders.length]);
-
+    // 1. Initial Load (Keep this to populate data on refresh)
     useEffect(() => {
-        if (user) {
-            setIsLoading(true);
-            fetchKitchenOrders();
-            const interval = setInterval(fetchKitchenOrders, 10000);
-            return () => clearInterval(interval);
-        }
-    }, [user, fetchKitchenOrders]);
-    
-    const handleUpdateStatus = (orderId, newStatus) => {
-        const originalOrders = orders;
-        const newOrders = orders.filter(o => o.id !== orderId);
-        setOrders(newOrders); 
+        const fetchKitchenOrders = async () => {
+            try {
+                const data = await apiClient.get('/api/orders/by-restaurant/kitchen');
+                // --- SORTING ---
+                // 1. Scheduled items closest to pickup time first
+                // 2. Then ASAP items by ID
+                data.sort((a, b) => {
+                    if (a.pickupTime && b.pickupTime) return new Date(a.pickupTime) - new Date(b.pickupTime);
+                    if (a.pickupTime) return 1; // Push scheduled to the end (or -1 to put them first, your choice)
+                    if (b.pickupTime) return -1;
+                    return a.id - b.id;
+                });
+                setOrders(data);
+            } catch (error) {
+                console.error("Failed to fetch KDS orders:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        if (user) fetchKitchenOrders();
+    }, [user]);
 
+    // 2. Activate WebSocket (Pass true to play sound on new orders)
+    useOrderWebSocket(setOrders, true, notificationSound);
+
+    const handleUpdateStatus = (orderId, newStatus) => {
+        // Optimistic Update is handled by the WebSocket callback now, 
+        // but keeping it here makes the button click feel instant before the server replies.
+        // However, strictly speaking, you can just fire the API call and let the WS update the UI.
         const promise = apiClient.patch(`/api/orders/${orderId}/status`, { status: newStatus });
-        
         toast.promise(promise, {
             loading: t('updatingStatus'),
             success: t('statusUpdated'),
-            error: () => {
-                setOrders(originalOrders);
-                return t('statusUpdateFailed');
-            }
+            error: t('statusUpdateFailed')
         });
     };
 

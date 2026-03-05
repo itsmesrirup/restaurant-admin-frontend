@@ -17,6 +17,7 @@ import StripeCallbackPage from './components/StripeCallbackPage';
 import ForgotPasswordPage from './components/ForgotPasswordPage';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import LanguageSwitcher from './components/LanguageSwitcher';
+import PosPage from './components/PosPage';
 import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
@@ -75,7 +76,7 @@ function App() {
         },
         ADMIN: {
             views: {
-                orders: <OrderDashboard />, kds: <KdsView />, analytics: <AnalyticsPage />,
+                orders: <OrderDashboard />, pos: <PosPage />, kds: <KdsView />, analytics: <AnalyticsPage />,
                 menu: <MenuManagement />, category: <CategoryManagement />, specials: <SpecialsManagement />,
                 reservations: <ReservationManagement />, users: <UserManagement />, website: <WebsitePage />, settings: <SettingsPage />,
                 // --- ADDED: The hidden view for the callback ---
@@ -88,6 +89,7 @@ function App() {
 
                 return [
                     { textKey: 'liveOrders', view: 'orders', icon: <DashboardIcon />, feature: 'ORDERS' },
+                    { textKey: 'newOrder', view: 'pos', icon: <RestaurantMenuIcon />, feature: 'POS' }, // "New Order"
                     { textKey: 'kitchenView', view: 'kds', icon: <DvrIcon />, feature: 'ORDERS' },
                     { textKey: 'analytics', view: 'analytics', icon: <BarChartIcon />, feature: 'ANALYTICS' },
                     { textKey: 'menuManagement', view: 'menu', icon: <RestaurantMenuIcon />, feature: 'MENU' },
@@ -103,6 +105,17 @@ function App() {
                 );
             },
             defaultView: 'orders'
+        },
+        WAITER: {
+            views: {
+                pos: <PosPage />,
+                orders: <OrderDashboard /> // Optional: Let them see status
+            },
+            navItems: [
+                { textKey: 'newOrder', view: 'pos', icon: <RestaurantMenuIcon /> }, // "New Order"
+                { textKey: 'liveOrders', view: 'orders', icon: <DashboardIcon /> }
+            ],
+            defaultView: 'pos'
         },
         KITCHEN_STAFF: {
             views: { kds: <KdsView /> },

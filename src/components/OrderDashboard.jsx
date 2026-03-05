@@ -6,6 +6,7 @@ import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } 
 import { useTranslation } from 'react-i18next';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import usePageTitle from '../hooks/usePageTitle';
+import { useOrderWebSocket } from '../hooks/useOrderWebSocket';
 
 function OrderDashboard() {
     const { t } = useTranslation();
@@ -21,29 +22,24 @@ function OrderDashboard() {
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [orderToCancel, setOrderToCancel] = useState(null);
 
-    const fetchOrders = useCallback(async () => {
-        if (!user) return;
-        try {
-            const data = await apiClient.get('/api/orders/by-restaurant');
-            // Sort: Pending/Preparing first, then by ID
-            data.sort((a, b) => b.id - a.id);
-            setOrders(data);
-        } catch (error) {
-            // Only show toast on the initial load, not silent refreshes
-            if (isLoading) toast.error("Could not load order history.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [user, isLoading]); // Dependency on isLoading ensures toast only shows once
-
-    // ✅ RESTORED: useEffect for polling
+    // 1. Initial Load
     useEffect(() => {
-        if (user) {
-            fetchOrders(); // Initial fetch
-            const interval = setInterval(fetchOrders, 15000); // Poll every 15 seconds
-            return () => clearInterval(interval); // Cleanup
-        }
-    }, [user, fetchOrders]);
+        const fetchOrders = async () => {
+            try {
+                const data = await apiClient.get('/api/orders/by-restaurant');
+                data.sort((a, b) => b.id - a.id); // Newest first
+                setOrders(data);
+            } catch (error) {
+                if (isLoading) toast.error("Could not load order history.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        if (user) fetchOrders();
+    }, [user]);
+
+    // 2. Activate WebSocket
+    useOrderWebSocket(setOrders, false);
 
     // --- NEW: Open Dialog Handler ---
     const handleCancelClick = (orderId) => {
@@ -162,12 +158,19 @@ function OrderDashboard() {
 
                                         </Box>
                                         
-                                        {order.pickupTime ? (
+                                        {order.tableNumber ? (
+                                            // Case 1: It has a table number -> Show "Dine-in"
+                                            <Typography variant="body1" sx={{ mt: 1, color: 'text.primary', fontWeight: 'bold' }}>
+                                                {t('dineIn')}
+                                            </Typography>
+                                        ) : order.pickupTime ? (
+                                            // Case 2: No table, but has specific time -> Show Time
                                             <Typography variant="body1" sx={{ mt: 1, color: 'secondary.main', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                 <AccessTimeIcon fontSize="small"/> 
                                                 {new Date(order.pickupTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
                                             </Typography>
                                         ) : (
+                                            // Case 3: No table, No specific time -> Show "Pickup: ASAP"
                                             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{t('pickupAsap')}</Typography>
                                         )}
 

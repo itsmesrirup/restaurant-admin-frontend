@@ -156,7 +156,7 @@
   "createMenu": "Create Menu",
   "saveChanges": "Save Changes",
   "userManagementTitle": "User Management",
-  "addKitchenStaff": "Add New Kitchen Staff",
+  "addNewStaff": "Add New Staff",
   "addStaff": "Add Staff",
   "currentUsers": "Current Users",
   "loadingApp": "Loading Application...",
@@ -266,6 +266,20 @@
   "timeOfDay": "Time of Day",
   "noDataAvailable": "No data available for this period",
   "dailyBreakdown": "Daily Breakdown",
-  "averageOrderValueReport": "Average Order Value"
-  
+  "averageOrderValueReport": "Average Order Value",
+  "newOrder": "New Order",
+  "kitchenStaff": "Kitchen Staff",
+  "waiter": "Waiter",
+  "role": "Role",
+  "dineIn": "Dine-in",
+  "posNewOrder": "New Order",
+  "posUpdatingTable": "Updating Table {{number}}",
+  "posTableNo": "Table No.",
+  "posOccupied": "Occupied",
+  "posAppendMessage": "Items will be added to the existing order.",
+  "posSelectItems": "Select items to start order",
+  "posClear": "Clear",
+  "posSend": "Send",
+  "posAppend": "Append",
+  "posTotal": "Total:"
 }
