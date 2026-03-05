@@ -57,17 +57,25 @@ function KdsView() {
         });
     };
 
+    // This watches the 'orders' list. If an order's status changes to 'READY_FOR_PICKUP'
+    // (via WebSocket or your click), this filter immediately removes it from the visible list.
+    const activeOrders = useMemo(() => {
+        return orders.filter(order => 
+            order.status === 'CONFIRMED' || order.status === 'PREPARING' || order.status === 'PENDING'
+        );
+    }, [orders]);
+
     if (isLoading) return <CircularProgress />;
 
     return (
         <Box sx={{ pb: 4 }}>
             <Typography variant="h4" gutterBottom>{t('kitchenDisplayTitle')}</Typography>
-            {orders.length === 0 ? (
+            {activeOrders.length === 0 ? (
                 <Typography>{t('noActiveOrders')}</Typography>
             ) : (
                 // --- FIX: Use alignItems="stretch" here as well ---
                 <Grid container spacing={2} alignItems="stretch">
-                    {orders.map(order => (
+                    {activeOrders.map(order => (
                         // --- FIX: Add display: flex to the Grid item ---
                         <Grid item xs={12} sm={6} md={4} key={order.id} sx={{ display: 'flex' }}>
                             <Paper 
