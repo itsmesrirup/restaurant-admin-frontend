@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import CloneMenuModal from './CloneMenuModal';
 import usePageTitle from '../hooks/usePageTitle';
 
-const INITIAL_MENU_FORM_STATE = { title: '', subtitle: '', startDate: '', endDate: '', isActive: true };
+const INITIAL_MENU_FORM_STATE = { title: '', subtitle: '', startDate: '', endDate: '', isActive: true, bannerImageUrl: '', themeColor: '#f5d76e' };
 const INITIAL_ITEM_FORM_STATE = { dayTitle: '', name: '', description: '' };
 
 function SpecialsManagement() {
@@ -81,7 +81,9 @@ function SpecialsManagement() {
             subtitle: menuFormData.subtitle,
             startDate: menuFormData.startDate,
             endDate: menuFormData.endDate,
-            active: menuFormData.isActive // Map frontend state 'isActive' to backend DTO 'active'
+            active: menuFormData.isActive, // Map frontend state 'isActive' to backend DTO 'active'
+            bannerImageUrl: menuFormData.bannerImageUrl,
+            themeColor: menuFormData.themeColor
         };
 
         const promise = editingMenuId 
@@ -158,7 +160,9 @@ function SpecialsManagement() {
             subtitle: menu.subtitle || '',
             startDate: menu.startDate || '',
             endDate: menu.endDate || '',
-            isActive: menu.isActive ?? true // Default to true if null/undefined
+            isActive: menu.isActive ?? true, // Default to true if null/undefined
+            bannerImageUrl: menu.bannerImageUrl || '',
+            themeColor: menu.themeColor || '#f5d76e'
         });
     };
 
@@ -337,6 +341,31 @@ function SpecialsManagement() {
                 <Grid container spacing={2} sx={{ mt: 1 }}>
                     <Grid item xs={12} sm={6}><TextField label={t('titleExample')} name="title" value={menuFormData.title} onChange={handleMenuFormChange} fullWidth required /></Grid>
                     <Grid item xs={12} sm={6}><TextField label={t('subtitleOptional')} name="subtitle" value={menuFormData.subtitle} onChange={handleMenuFormChange} fullWidth /></Grid>
+                    {/* Banner Image URL Field */}
+                    <Grid item xs={12} sm={9}>
+                        <TextField 
+                            label="Banner Image URL (For Website)" 
+                            name="bannerImageUrl" 
+                            value={menuFormData.bannerImageUrl} 
+                            onChange={handleMenuFormChange} 
+                            fullWidth 
+                            helperText="Leave blank to only show on the ordering page."
+                        />
+                    </Grid>
+                    
+                    {/* ✅ ADDED: Theme Color Picker */}
+                    <Grid item xs={12} sm={3}>
+                        <TextField 
+                            label="Theme Color" 
+                            name="themeColor" 
+                            type="color" // This makes it a native color picker!
+                            value={menuFormData.themeColor} 
+                            onChange={handleMenuFormChange} 
+                            fullWidth 
+                            sx={{ '& input': { height: '50px', cursor: 'pointer' } }}
+                            helperText="Accent color"
+                        />
+                    </Grid>
                     <Grid item xs={12} sm={6}><TextField label={t('startDate')} name="startDate" type="date" value={menuFormData.startDate} onChange={handleMenuFormChange} fullWidth required InputLabelProps={{ shrink: true }} /></Grid>
                     <Grid item xs={12} sm={6}><TextField label={t('endDate')} name="endDate" type="date" value={menuFormData.endDate} onChange={handleMenuFormChange} fullWidth required InputLabelProps={{ shrink: true }} /></Grid>
                     <Grid item xs={12}>

@@ -200,6 +200,32 @@ function SuperAdminDashboard() {
         });
     };
 
+    const handleThemeChange = (restaurantId, newTheme) => {
+        const promise = apiClient.patch(`/api/restaurants/${restaurantId}/theme`, { theme: newTheme });
+        toast.promise(promise, {
+            loading: 'Updating theme...',
+            success: () => {
+                // Optimistically update the UI
+                setRestaurants(prev => prev.map(r => r.id === restaurantId ? { ...r, websiteTheme: newTheme } : r));
+                return 'Website theme updated!';
+            },
+            error: (err) => err.message || 'Failed to update theme.'
+        });
+    };
+
+    const handleDomainChange = (restaurantId, newDomain) => {
+        const promise = apiClient.patch(`/api/restaurants/${restaurantId}/domain`, { customDomain: newDomain });
+        
+        toast.promise(promise, {
+            loading: 'Updating domain...',
+            success: () => {
+                fetchAllRestaurants(); // Refresh to see the cleaned-up domain from the DB
+                return 'Custom domain saved!';
+            },
+            error: (err) => err.message || 'Failed to update domain. (Is it already in use?)'
+        });
+    };
+
     return (
         <Box>
             <Typography variant="h4" gutterBottom>Super Admin Dashboard</Typography>
@@ -295,6 +321,35 @@ function SuperAdminDashboard() {
                                         </Select>
                                     </FormControl>
                                 )}
+
+                                <FormControl sx={{ m: 1, minWidth: 140 }} size="small">
+                                    <InputLabel>Website Theme</InputLabel>
+                                    <Select
+                                        value={restaurant.websiteTheme || 'CLASSIC'}
+                                        label="Website Theme"
+                                        onChange={(e) => handleThemeChange(restaurant.id, e.target.value)}
+                                    >
+                                        <MenuItem value="CLASSIC">Classic</MenuItem>
+                                        <MenuItem value="DARK_ELEGANCE">Dark Elegance</MenuItem>
+                                        <MenuItem value="VIBRANT">Vibrant</MenuItem>
+                                        <MenuItem value="MINIMALIST">Minimalist</MenuItem>
+                                    </Select>
+                                </FormControl>
+
+                                <TextField
+                                    size="small"
+                                    label="Custom Domain"
+                                    placeholder="www.chez-pierre.fr"
+                                    defaultValue={restaurant.customDomain || ''}
+                                    onBlur={(e) => {
+                                        // Only trigger API if the value actually changed
+                                        if (e.target.value !== restaurant.customDomain) {
+                                            handleDomainChange(restaurant.id, e.target.value);
+                                        }
+                                    }}
+                                    sx={{ width: 200, m: 1 }}
+                                    helperText="Click away to save"
+                                />
 
                                 <FormControlLabel
                                     control={

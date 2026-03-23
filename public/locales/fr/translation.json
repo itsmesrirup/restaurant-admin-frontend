@@ -118,7 +118,7 @@
   "logoUrl": "URL de l'image du Logo",
   "logoUrlHelper": "ex: https://example.com/logo.png",
   "menuImageUrl": "URL de l'image décorative du menu",
-  "menuImageUrlHelper": "Image optionnelle pour la page du menu",
+  "menuImageUrlHelper": "Collez l'URL d'une image (.jpg, .png) ou l'URL d'une vidéo (.mp4) pour l'arrière-plan de votre site web.",
   "featureManagement": "Gestion des Fonctionnalités",
   "useDarkTheme": "Utiliser le Thème Sombre pour la Page Client",
   "enableReservations": "Activer les Réservations de Table en Ligne",
