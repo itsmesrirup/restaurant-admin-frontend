@@ -48,18 +48,15 @@ const drawerWidth = 240;
 
 function App() {
     const { t } = useTranslation();
-    const { token, user, isLoading, logout } = useAuth();
+    const { token, user, isLoading, logout, isImpersonating, stopImpersonation } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
     // --- 1. DEFINE STATE FIRST ---
-    // We need to initialize this first, but we can't use config.defaultView yet.
-    // So we initialize with a safe default or null.
-    const [view, setView] = useState('orders'); // Initialize with default
+    const [view, setView] = useState('orders'); 
 
     // --- 2. DEFINE CONFIG AFTER ---
-    // Now `setView` exists, so we can use it in the JSX inside `views`.
     const rolesConfig = {
         SUPER_ADMIN: {
             views: { 
@@ -79,7 +76,6 @@ function App() {
                 orders: <OrderDashboard />, pos: <PosPage />, kds: <KdsView />, analytics: <AnalyticsPage />,
                 menu: <MenuManagement />, category: <CategoryManagement />, specials: <SpecialsManagement />,
                 reservations: <ReservationManagement />, users: <UserManagement />, website: <WebsitePage />, settings: <SettingsPage />,
-                // --- ADDED: The hidden view for the callback ---
                 stripeCallback: <StripeCallbackPage onViewChange={setView} />,
                 commissions: <CommissionPage />
             },
@@ -87,20 +83,30 @@ function App() {
                 const features = user.availableFeatures || [];
                 const model = user.paymentModel;
 
-                return [
+                // 1. Basic items EVERY restaurant admin gets
+                const basicItems = [
                     { textKey: 'liveOrders', view: 'orders', icon: <DashboardIcon />, feature: 'ORDERS' },
-                    { textKey: 'newOrder', view: 'pos', icon: <RestaurantMenuIcon />, feature: 'POS' }, // "New Order"
+                    { textKey: 'newOrder', view: 'pos', icon: <RestaurantMenuIcon />, feature: 'POS' }, 
                     { textKey: 'kitchenView', view: 'kds', icon: <DvrIcon />, feature: 'ORDERS' },
+                    { textKey: 'reservations', view: 'reservations', icon: <EventSeatIcon />, feature: 'RESERVATIONS' },
+                    { textKey: 'settings', view: 'settings', icon: <SettingsIcon />, feature: 'ORDERS' }
+                ];
+
+                // 2. Advanced items ONLY YOU (Super Admin Impersonating) get to see
+                const advancedItems = [
                     { textKey: 'analytics', view: 'analytics', icon: <BarChartIcon />, feature: 'ANALYTICS' },
                     { textKey: 'menuManagement', view: 'menu', icon: <RestaurantMenuIcon />, feature: 'MENU' },
                     { textKey: 'categoryManagement', view: 'category', icon: <CategoryIcon />, feature: 'MENU' },
                     { textKey: 'specials', view: 'specials', icon: <StarIcon />, feature: 'SPECIALS' },
-                    { textKey: 'reservations', view: 'reservations', icon: <EventSeatIcon />, feature: 'RESERVATIONS' },
-                    { textKey: 'userManagement', view: 'users', icon: <PeopleIcon />, feature: 'ORDERS' },
                     { textKey: 'websitePage', view: 'website', icon: <GlobeIcon />, feature: 'WEBSITE_BUILDER' },
-                    { textKey: 'commissions', view: 'commissions', icon: <MonetizationOnIcon />, feature: 'ORDERS', model: 'COMMISSION' },
-                    { textKey: 'settings', view: 'settings', icon: <SettingsIcon />, feature: 'ORDERS' }
-                ].filter(item => 
+                    { textKey: 'userManagement', view: 'users', icon: <PeopleIcon />, feature: 'ORDERS' },
+                    { textKey: 'commissions', view: 'commissions', icon: <MonetizationOnIcon />, feature: 'ORDERS', model: 'COMMISSION' }
+                ];
+
+                // ✅ Combine them if you are impersonating
+                const allAllowedItems = isImpersonating ? [...basicItems, ...advancedItems] : basicItems;
+
+                return allAllowedItems.filter(item => 
                     features.includes(item.feature) && (!item.model || item.model === model)
                 );
             },
@@ -109,10 +115,10 @@ function App() {
         WAITER: {
             views: {
                 pos: <PosPage />,
-                orders: <OrderDashboard /> // Optional: Let them see status
+                orders: <OrderDashboard /> 
             },
             navItems: [
-                { textKey: 'newOrder', view: 'pos', icon: <RestaurantMenuIcon /> }, // "New Order"
+                { textKey: 'newOrder', view: 'pos', icon: <RestaurantMenuIcon /> }, 
                 { textKey: 'liveOrders', view: 'orders', icon: <DashboardIcon /> }
             ],
             defaultView: 'pos'
@@ -125,7 +131,6 @@ function App() {
     };
 
     // --- 3. HANDLE DEFAULT VIEW ---
-    // Now we can calculate the real default view
     const currentRole = user?.role || 'GUEST'; 
     const config = rolesConfig[currentRole] || { views: {}, navItems: [], defaultView: '' };
 
@@ -139,21 +144,7 @@ function App() {
                 setView(rolesConfig[user.role]?.defaultView || 'orders');
             }
         }
-    }, [user]); // We rely on useEffect to set the correct initial view
-    
-    // --- ADDED: Check for Stripe Redirect on Initial Load ---
-    // If the URL has ?code=..., it means we are coming back from Stripe.
-    // We should set the initial view to 'stripeCallback'.
-    const getInitialView = () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('code')) {
-            return 'stripeCallback';
-        }
-        // Default behavior
-        if (user?.role === 'SUPER_ADMIN') return 'super';
-        if (user?.role === 'KITCHEN_STAFF') return 'kds';
-        return 'orders';
-    };
+    }, [user]); 
     
     if (isLoading) {
         return <div>{t('loadingApp', 'Loading Application...')}</div>;
@@ -164,24 +155,17 @@ function App() {
         return (
             <>
                 <Toaster position="top-center" />
-                {/* 
-                   We need a Router here because ForgotPassword and ResetPassword 
-                   are separate pages with their own URLs.
-                */}
                 <Router>
                     <Routes>
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                         <Route path="/reset-password" element={<ResetPasswordPage />} />
-                        
-                        {/* Default redirect to login */}
                         <Route path="*" element={<Navigate to="/login" replace />} />
                     </Routes>
                 </Router>
             </>
         );
     }
-
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
@@ -194,29 +178,15 @@ function App() {
     const currentViewTitle = t(navItems.find(item => item.view === view)?.textKey);
 
     const drawerContent = (
-        <Box 
-            sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                height: '100%' 
-            }}
-        >
-            {/* --- CHANGED: Mobile Header Layout --- */}
-            {/* Switched to 'column' layout so Name and Language Switcher stack nicely */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <Toolbar sx={{ 
-                backgroundColor: '#222', 
-                display: 'flex', 
-                flexDirection: 'column', // Stack vertical
-                alignItems: 'center',    // Center horizontal
-                justifyContent: 'center',
-                py: 2,                   // Add padding top/bottom
-                gap: 1.5                 // Gap between name and buttons
+                backgroundColor: '#222', display: 'flex', flexDirection: 'column', 
+                alignItems: 'center', justifyContent: 'center', py: 2, gap: 1.5 
             }}>
                 <Typography variant="h5" sx={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>
                     {user?.restaurantName || 'Tablo'}
                 </Typography>
                 
-                {/* Only show Language Switcher in Drawer on Mobile */}
                 <Box sx={{ display: { xs: 'block', md: 'none' } }}>
                     <LanguageSwitcher />
                 </Box>
@@ -248,6 +218,7 @@ function App() {
     return (
         <Box sx={{ display: 'flex' }}>
             <Toaster position="top-center" />
+            
             <AppBar
                 position="fixed"
                 sx={{
@@ -255,29 +226,32 @@ function App() {
                     ml: { md: `${drawerWidth}px}` },
                 }}
             >
+                {/* ✅ MOVED IMPERSONATION BANNER INSIDE APPBAR TO PREVENT OVERLAP */}
+                {isImpersonating && (
+                    <Box sx={{ bgcolor: 'error.main', color: 'white', p: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="body2" fontWeight="bold">
+                            You are currently managing {user?.restaurantName}
+                        </Typography>
+                        <Button size="small" variant="contained" color="inherit" sx={{ color: 'error.main' }} onClick={stopImpersonation}>
+                            Return to Super Admin
+                        </Button>
+                    </Box>
+                )}
+
                 <Toolbar>
-                    <IconButton
-                        color="inherit"
-                        aria-label="open drawer"
-                        edge="start"
-                        onClick={handleDrawerToggle}
-                        sx={{ mr: 2, display: { md: 'none' } }}
-                    >
+                    <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { md: 'none' } }}>
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
                         {currentViewTitle}
                     </Typography>
-                    {/* Desktop Language Switcher (Top Right) */}
-                    <Box sx={{ display: { xs: 'none', md: 'block' }, color: 'white' }}> {/* Added color: white */}
+                    <Box sx={{ display: { xs: 'none', md: 'block' }, color: 'white' }}>
                         <LanguageSwitcher />
                     </Box>
                 </Toolbar>
             </AppBar>
-            <Box
-                component="nav"
-                sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-            >
+
+            <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
                 <Drawer
                     variant="temporary"
                     open={mobileOpen}
@@ -301,9 +275,9 @@ function App() {
                     {drawerContent}
                 </Drawer>
             </Box>
-            <Box component="main"
-                sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` } }}>
-                <Toolbar />
+
+            {/* ✅ Added extra padding top (pt) if impersonating, so the content isn't hidden behind the taller AppBar */}
+            <Box component="main" sx={{ flexGrow: 1, p: 3, pt: isImpersonating ? 12 : 10, width: { md: `calc(100% - ${drawerWidth}px)` } }}>
                 {config.views[view]}
             </Box>
         </Box>

@@ -89,6 +89,9 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // ✅ ADDED: Check if we are currently impersonating
+    const isImpersonating = !!localStorage.getItem('superAdminToken');
+
     useEffect(() => {
         const fetchUserOnLoad = async () => {
             if (token) {
@@ -137,7 +140,37 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
-    const value = { token, user, isLoading, login, logout };
+    // ✅ ADDED: Impersonation Functions
+    const startImpersonation = async (restaurantId) => {
+        try {
+            const response = await apiClient.post(`/api/auth/impersonate/${restaurantId}`);
+            // 1. Save our powerful Super Admin token safely
+            localStorage.setItem('superAdminToken', token);
+            // 2. Log in using the new restaurant admin token
+            localStorage.setItem('authToken', response.token);
+            // 3. Hard reload to reset all app states and routing
+            window.location.href = '/'; 
+        } catch (error) {
+            // ✅ CHANGED: Display the actual error message from the backend
+            // It will say: "No Admin account exists for this restaurant yet."
+            toast.error(error.message || "Failed to impersonate restaurant.");
+        }
+    };
+
+    const stopImpersonation = () => {
+        const saToken = localStorage.getItem('superAdminToken');
+        if (saToken) {
+            localStorage.removeItem('superAdminToken');
+            localStorage.setItem('authToken', saToken);
+            window.location.href = '/';
+        }
+    };
+
+    // ✅ ADDED to value export:
+    const value = { 
+        token, user, isLoading, login, logout, 
+        isImpersonating, startImpersonation, stopImpersonation 
+    };
 
     return (
         <AuthContext.Provider value={value}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { apiClient } from '../context/AuthContext';
+import { apiClient, useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { Paper, Typography, Box, TextField, Button, Grid, Divider, List, ListItem, ListItemText, IconButton, CircularProgress, FormControl, InputLabel, Select, MenuItem, InputAdornment, FormControlLabel, Switch, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -14,6 +14,7 @@ function SuperAdminDashboard() {
     const [userEmail, setUserEmail] = useState('');
     const [userPassword, setUserPassword] = useState('');
     const [userRestaurantId, setUserRestaurantId] = useState('');
+    const { startImpersonation } = useAuth();
 
      // --- ADDED: State for Password Reset Modal ---
     const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -269,6 +270,16 @@ function SuperAdminDashboard() {
                             </Box>
                             
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+
+                                <Button 
+                                    variant="contained" 
+                                    color="secondary" 
+                                    onClick={() => startImpersonation(restaurant.id)}
+                                    sx={{ fontWeight: 'bold' }}
+                                >
+                                    Manage Setup
+                                </Button>
+
                                 {/* --- The Payment Toggle Switch --- */}
                                 <FormControlLabel
                                     control={

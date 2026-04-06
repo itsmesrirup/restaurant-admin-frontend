@@ -7,7 +7,7 @@ import OpeningHoursEditor from './OpeningHoursEditor';
 import usePageTitle from '../hooks/usePageTitle';
 
 function SettingsPage() {
-    const { user } = useAuth();
+    const { user, isImpersonating } = useAuth();
     const { t } = useTranslation();
     usePageTitle(t('settings')); // "Settings | Tablo"
     // Initialize state with all possible fields to prevent runtime errors
@@ -132,6 +132,10 @@ function SettingsPage() {
                 />
             </Box>
 
+        
+            {/* ✅ HIDE EVERYTHING BELOW FROM THE RESTAURANT OWNER */}
+        {isImpersonating && (
+            <>
             {/* --- SECTION 3: Branding --- */}
             <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>{t('brandingDisplay')}</Typography>
             <Grid container spacing={3}>
@@ -231,6 +235,8 @@ function SettingsPage() {
                     </Box>
                 </>
             )}
+            </>
+        )}
             
             <Box sx={{ mt: 3, position: 'relative' }}>
                 <Button variant="contained" onClick={handleSave} disabled={isSaving}>
