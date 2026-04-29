@@ -5,6 +5,8 @@ import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Div
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import PointOfSaleIcon from '@mui/icons-material/PointOfSale'; 
+import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
 import usePageTitle from '../hooks/usePageTitle';
 import { useOrderWebSocket } from '../hooks/useOrderWebSocket';
 
@@ -149,6 +151,13 @@ function OrderDashboard() {
                                             <Typography variant="h6">{t('orderNum', { orderId: order.orderNumber })}</Typography>
                                             {order.tableNumber && <Chip label={t('forTable', { tableNumber: order.tableNumber })} color="primary" size="small" />}
 
+                                            {/* NEW: ORDER SOURCE CHIP */}
+                                            {order.source === 'POS' ? (
+                                                <Chip icon={<PointOfSaleIcon />} label="POS" size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />
+                                            ) : (
+                                                <Chip icon={<PhoneIphoneIcon />} label="Online" size="small" color="info" sx={{ fontWeight: 'bold' }} />
+                                            )}
+                                            
                                             {/* --- NEW: Payment Status Chip --- */}
                                             {order.paymentIntentId ? (
                                                 <Chip label="PAID" color="success" size="small" sx={{ fontWeight: 'bold' }} />
