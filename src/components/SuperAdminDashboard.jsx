@@ -201,16 +201,20 @@ function SuperAdminDashboard() {
         });
     };
 
-    const handleThemeChange = (restaurantId, newTheme) => {
-        const promise = apiClient.patch(`/api/restaurants/${restaurantId}/theme`, { theme: newTheme });
+    const handleThemeChange = (restaurantId, field, newValue) => {
+        // Map 'websiteTheme' to 'theme' for the backend API, otherwise use the field name as-is
+        const payload = field === 'websiteTheme' ? { theme: newValue } : { [field]: newValue };
+
+        const promise = apiClient.patch(`/api/restaurants/${restaurantId}/theme`, payload);
+        
         toast.promise(promise, {
-            loading: 'Updating theme...',
+            loading: 'Updating design...',
             success: () => {
-                // Optimistically update the UI
-                setRestaurants(prev => prev.map(r => r.id === restaurantId ? { ...r, websiteTheme: newTheme } : r));
-                return 'Website theme updated!';
+                // Update the local React state with the correct field name
+                setRestaurants(prev => prev.map(r => r.id === restaurantId ? { ...r, [field]: newValue } : r));
+                return 'Design updated!';
             },
-            error: (err) => err.message || 'Failed to update theme.'
+            error: 'Failed to update design.'
         });
     };
 
@@ -338,12 +342,27 @@ function SuperAdminDashboard() {
                                     <Select
                                         value={restaurant.websiteTheme || 'CLASSIC'}
                                         label="Website Theme"
-                                        onChange={(e) => handleThemeChange(restaurant.id, e.target.value)}
+                                        onChange={(e) => handleThemeChange(restaurant.id, 'websiteTheme', e.target.value)}
                                     >
                                         <MenuItem value="CLASSIC">Classic</MenuItem>
                                         <MenuItem value="DARK_ELEGANCE">Dark Elegance</MenuItem>
                                         <MenuItem value="VIBRANT">Vibrant</MenuItem>
+                                        <MenuItem value="WARM_SPICE">Warm Spice</MenuItem>
                                         <MenuItem value="MINIMALIST">Minimalist</MenuItem>
+                                    </Select>
+                                </FormControl>
+
+                                {/* ✅ NEW: GALLERY STYLE */}
+                                <FormControl sx={{ m: 1, minWidth: 140 }} size="small">
+                                    <InputLabel>Gallery Style</InputLabel>
+                                    <Select
+                                        value={restaurant.galleryStyle || 'GRID'}
+                                        label="Gallery Style"
+                                        onChange={(e) => handleThemeChange(restaurant.id, 'galleryStyle', e.target.value)}
+                                    >
+                                        <MenuItem value="GRID">Static Grid</MenuItem>
+                                        <MenuItem value="COLLAGE">Overlap Collage</MenuItem>
+                                        <MenuItem value="MARQUEE">Moving Marquee</MenuItem>
                                     </Select>
                                 </FormControl>
 

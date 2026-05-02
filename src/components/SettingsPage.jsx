@@ -111,6 +111,18 @@ function SettingsPage() {
                     />
                 </Grid>
 
+                {/* ✅ ADDED: External Website URL */}
+                <Grid item xs={12} sm={6}>
+                    <TextField 
+                        label="External Website URL (Optional)" 
+                        name="externalWebsiteUrl" 
+                        value={fullSettings.externalWebsiteUrl || ''} 
+                        onChange={handleInputChange} 
+                        fullWidth 
+                        helperText="If you use your own WordPress/Wix site, paste the link here."
+                    />
+                </Grid>
+
                 <Grid item xs={12} sm={6}>
                     <TextField label={t('address')} name="address" value={fullSettings.address || ''} onChange={handleInputChange} fullWidth />
                 </Grid>
