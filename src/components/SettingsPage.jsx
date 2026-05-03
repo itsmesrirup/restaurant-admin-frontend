@@ -133,6 +133,28 @@ function SettingsPage() {
                 <Grid item xs={12} sm={6}>
                     <TextField label={t('phoneLabelAdmin')} name="phoneNumber" value={fullSettings.phoneNumber || ''} onChange={handleInputChange} fullWidth />
                 </Grid>
+
+                {/* --- NEW SECTION: ANNOUNCEMENT BAR --- */}
+                <Box sx={{ mt: 4, p: 3, backgroundColor: '#fff3e0', borderRadius: 2, borderLeft: '4px solid #ff9800' }}>
+                    <Typography variant="h6" gutterBottom color="warning.dark">Announcement Bar</Typography>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                        Display a temporary banner at the very top of your website and ordering page (e.g., "Closed for holidays" or "10% off for Diwali!").
+                    </Typography>
+                    <FormControlLabel
+                        control={<Switch checked={fullSettings.announcementEnabled || false} onChange={handleToggleChange} name="announcementEnabled" color="warning" />}
+                        label="Enable Announcement Banner"
+                    />
+                    {fullSettings.announcementEnabled && (
+                        <TextField 
+                            label="Announcement Message" 
+                            name="announcementMessage" 
+                            value={fullSettings.announcementMessage || ''} 
+                            onChange={handleInputChange} 
+                            fullWidth 
+                            sx={{ mt: 2, backgroundColor: 'white' }}
+                        />
+                    )}
+                </Box>
             </Grid>
 
             {/* --- SECTION 2: Operating Hours (Full Width) --- */}
