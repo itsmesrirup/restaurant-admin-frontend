@@ -282,5 +282,7 @@
   "posClear": "Effacer",
   "posSend": "Envoyer",
   "posAppend": "Ajouter",
-  "posTotal": "Total:"
+  "posTotal": "Total:",
+  "enablePush": "Activez les notifications push pour être alerté instantanément lorsqu'une nouvelle commande arrive !",
+  "enable": "Activer"
 }

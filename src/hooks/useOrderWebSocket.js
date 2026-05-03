@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast'; // ✅ IMPORT TOAST
 
 export const useOrderWebSocket = (setOrders, playSound = false, soundFile = '/notification.mp3') => {
     const { user } = useAuth();
@@ -26,23 +27,49 @@ export const useOrderWebSocket = (setOrders, playSound = false, soundFile = '/no
                         } else {
                             // ✅ IT'S A NEW ORDER!
                             
-                            // 1. Play Sound
+                            // 1. Play Audio Alert
                             if (playSound) {
-                                audioRef.current.play().catch(e => console.log("Audio blocked", e));
+                                audioRef.current.play().catch(e => console.log("Audio blocked by browser policy", e));
                             }
+
+                            // 2. In-App Visual Alert (Guarantees they see it if app is open)
+                            toast(`New Order #${updatedOrder.orderNumber}! \n Total: €${updatedOrder.totalPrice.toFixed(2)}`, {
+                                icon: '🛎️',
+                                duration: 8000, // Stays on screen for 8 seconds
+                                style: {
+                                    borderRadius: '10px',
+                                    background: '#333',
+                                    color: '#fff',
+                                    padding: '16px',
+                                    fontSize: '1.2rem',
+                                    fontWeight: 'bold'
+                                },
+                            });
                             
-                            // 2. Trigger Native OS Push Notification
+                            // 3. Native OS Push Notification (Banner/Vibration)
                             if ("Notification" in window && Notification.permission === "granted") {
                                 const notifTitle = `New Order #${updatedOrder.orderNumber}!`;
                                 const notifBody = `Total: €${updatedOrder.totalPrice.toFixed(2)}\nItems: ${updatedOrder.items.length}`;
                                 
-                                // Vibrate phone if supported, show notification banner
                                 navigator.vibrate && navigator.vibrate([200, 100, 200]);
-                                new Notification(notifTitle, {
-                                    body: notifBody,
-                                    icon: '/vite.svg', // Optional: Replace with your actual app logo URL
-                                    requireInteraction: true // Keeps notification on screen until tapped
-                                });
+
+                                // Use Service Worker if available (iOS prefers this), fallback to standard
+                                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                                    navigator.serviceWorker.ready.then(registration => {
+                                        registration.showNotification(notifTitle, {
+                                            body: notifBody,
+                                            icon: '/vite.svg',
+                                            vibrate:[200, 100, 200],
+                                            requireInteraction: true
+                                        });
+                                    });
+                                } else {
+                                    new Notification(notifTitle, {
+                                        body: notifBody,
+                                        icon: '/vite.svg',
+                                        requireInteraction: true 
+                                    });
+                                }
                             }
 
                             return[updatedOrder, ...prevOrders];

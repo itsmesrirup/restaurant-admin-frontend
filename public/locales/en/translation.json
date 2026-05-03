@@ -281,5 +281,7 @@
   "posClear": "Clear",
   "posSend": "Send",
   "posAppend": "Append",
-  "posTotal": "Total:"
+  "posTotal": "Total:",
+  "enablePush": "Enable Push Notifications to get instantly alerted when a new order arrives!",
+  "enable": "Enable"
 }

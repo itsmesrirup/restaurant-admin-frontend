@@ -139,11 +139,11 @@ function OrderDashboard() {
                     sx={{ mb: 3 }}
                     action={
                         <Button color="inherit" size="small" variant="outlined" onClick={requestNotificationPermission}>
-                            Enable
+                            {t('enable')}
                         </Button>
                     }
                 >
-                    Enable Push Notifications to get instantly alerted when a new order arrives!
+                    {t('enablePush')}
                 </Alert>
             )}
 
