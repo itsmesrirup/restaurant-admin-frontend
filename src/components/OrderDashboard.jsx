@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Divider, Chip } from '@mui/material';
+import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Divider, Chip, Alert } from '@mui/material';
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -23,6 +23,28 @@ function OrderDashboard() {
     // --- ADDED: State for Cancel Dialog ---
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [orderToCancel, setOrderToCancel] = useState(null);
+
+    // ✅ NEW STATE: Track notification permissions
+    const[notifPermission, setNotifPermission] = useState(
+        "Notification" in window ? Notification.permission : "denied"
+    );
+
+    // ✅ NEW FUNCTION: Handle the button click
+    const requestNotificationPermission = async () => {
+        if (!("Notification" in window)) {
+            toast.error("This browser does not support desktop notification");
+            return;
+        }
+        // This will pop up the native iOS/Android "Allow Notifications" prompt
+        const permission = await Notification.requestPermission();
+        setNotifPermission(permission);
+        
+        if (permission === 'granted') {
+            toast.success("Push notifications enabled!");
+        } else {
+            toast.error("Notifications were denied.");
+        }
+    };
 
     // 1. Initial Load
     useEffect(() => {
@@ -109,6 +131,22 @@ function OrderDashboard() {
     return (
         <Box sx={{ pb: 4 }}>
             <Typography variant="h4" gutterBottom>{t('liveOrdersTitle')}</Typography>
+
+            {/* ✅ NEW: NOTIFICATION PERMISSION BANNER */}
+            {notifPermission === 'default' && (
+                <Alert 
+                    severity="info" 
+                    sx={{ mb: 3 }}
+                    action={
+                        <Button color="inherit" size="small" variant="outlined" onClick={requestNotificationPermission}>
+                            Enable
+                        </Button>
+                    }
+                >
+                    Enable Push Notifications to get instantly alerted when a new order arrives!
+                </Alert>
+            )}
+
             <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                 <Typography variant="body1"><strong>{t('filter')}:</strong></Typography>
                 {/* --- ADDED: Scheduled Button --- */}

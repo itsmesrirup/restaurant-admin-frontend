@@ -8,15 +8,6 @@ export const useOrderWebSocket = (setOrders, playSound = false, soundFile = '/no
     const clientRef = useRef(null);
     const audioRef = useRef(new Audio(soundFile));
 
-    // ✅ REQUEST NATIVE NOTIFICATION PERMISSION
-    useEffect(() => {
-        if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-            Notification.requestPermission().then(permission => {
-                console.log("Notification permission:", permission);
-            });
-        }
-    },[]);
-
     useEffect(() => {
         if (!user || !user.restaurantId) return;
 
