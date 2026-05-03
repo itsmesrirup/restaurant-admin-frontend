@@ -284,5 +284,6 @@
   "posAppend": "Ajouter",
   "posTotal": "Total:",
   "enablePush": "Activez les notifications push pour être alerté instantanément lorsqu'une nouvelle commande arrive !",
-  "enable": "Activer"
+  "enable": "Activer",
+  "refresh": "Actualiser"
 }

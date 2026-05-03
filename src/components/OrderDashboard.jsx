@@ -9,6 +9,7 @@ import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
 import usePageTitle from '../hooks/usePageTitle';
 import { useOrderWebSocket } from '../hooks/useOrderWebSocket';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 function OrderDashboard() {
     const { t } = useTranslation();
@@ -130,7 +131,18 @@ function OrderDashboard() {
 
     return (
         <Box sx={{ pb: 4 }}>
-            <Typography variant="h4" gutterBottom>{t('liveOrdersTitle')}</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h4" sx={{ m: 0 }}>{t('liveOrdersTitle')}</Typography>
+                <Button 
+                    variant="outlined" 
+                    color="primary" 
+                    startIcon={<RefreshIcon />} 
+                    onClick={fetchOrders} // ✅ Manually triggers a fresh fetch!
+                    disabled={isLoading}
+                >
+                    {t('refresh')}
+                </Button>
+            </Box>
 
             {/* ✅ NEW: NOTIFICATION PERMISSION BANNER */}
             {notifPermission === 'default' && (

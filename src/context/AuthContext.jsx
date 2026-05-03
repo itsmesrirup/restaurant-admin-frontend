@@ -33,7 +33,11 @@ export const apiClient = {
     },
     
     get: async function(path) {
-        const response = await fetch(`${API_BASE_URL}${path}`, { headers: this.getAuthHeaders() });
+        const response = await fetch(`${API_BASE_URL}${path}`, { 
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+            cache: 'no-store' // ✅ FORCES SAFARI TO FETCH FRESH DATA EVERY TIME
+        });
         return this.handleResponse(response);
     },
 
