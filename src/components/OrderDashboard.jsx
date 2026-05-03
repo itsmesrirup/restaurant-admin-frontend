@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Divider, Chip, Alert } from '@mui/material';
+import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Divider, Chip } from '@mui/material';
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -9,7 +9,6 @@ import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
 import usePageTitle from '../hooks/usePageTitle';
 import { useOrderWebSocket } from '../hooks/useOrderWebSocket';
-import RefreshIcon from '@mui/icons-material/Refresh';
 
 function OrderDashboard() {
     const { t } = useTranslation();
@@ -24,28 +23,6 @@ function OrderDashboard() {
     // --- ADDED: State for Cancel Dialog ---
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [orderToCancel, setOrderToCancel] = useState(null);
-
-    // ✅ NEW STATE: Track notification permissions
-    const[notifPermission, setNotifPermission] = useState(
-        "Notification" in window ? Notification.permission : "denied"
-    );
-
-    // ✅ NEW FUNCTION: Handle the button click
-    const requestNotificationPermission = async () => {
-        if (!("Notification" in window)) {
-            toast.error("This browser does not support desktop notification");
-            return;
-        }
-        // This will pop up the native iOS/Android "Allow Notifications" prompt
-        const permission = await Notification.requestPermission();
-        setNotifPermission(permission);
-        
-        if (permission === 'granted') {
-            toast.success("Push notifications enabled!");
-        } else {
-            toast.error("Notifications were denied.");
-        }
-    };
 
     // 1. Initial Load
     useEffect(() => {
@@ -131,34 +108,7 @@ function OrderDashboard() {
 
     return (
         <Box sx={{ pb: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h4" sx={{ m: 0 }}>{t('liveOrdersTitle')}</Typography>
-                <Button 
-                    variant="outlined" 
-                    color="primary" 
-                    startIcon={<RefreshIcon />} 
-                    onClick={fetchOrders} // ✅ Manually triggers a fresh fetch!
-                    disabled={isLoading}
-                >
-                    {t('refresh')}
-                </Button>
-            </Box>
-
-            {/* ✅ NEW: NOTIFICATION PERMISSION BANNER */}
-            {notifPermission === 'default' && (
-                <Alert 
-                    severity="info" 
-                    sx={{ mb: 3 }}
-                    action={
-                        <Button color="inherit" size="small" variant="outlined" onClick={requestNotificationPermission}>
-                            {t('enable')}
-                        </Button>
-                    }
-                >
-                    {t('enablePush')}
-                </Alert>
-            )}
-
+            <Typography variant="h4" gutterBottom>{t('liveOrdersTitle')}</Typography>
             <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                 <Typography variant="body1"><strong>{t('filter')}:</strong></Typography>
                 {/* --- ADDED: Scheduled Button --- */}
