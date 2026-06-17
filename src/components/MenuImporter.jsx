@@ -33,6 +33,14 @@ const ItemsList = ({ items, onUpdate, onDelete }) => (
                     sx={{ width: 120 }}
                     size="small"
                 />
+                <TextField 
+                    label="Unit" 
+                    value={item.priceUnit || ''} 
+                    onChange={(e) => onUpdate(idx, 'priceUnit', e.target.value)}
+                    sx={{ width: 80 }}
+                    size="small"
+                    placeholder="KG"
+                />
                 <IconButton onClick={() => onDelete(idx)} color="error" size="small">
                     <DeleteIcon />
                 </IconButton>

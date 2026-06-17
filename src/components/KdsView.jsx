@@ -141,7 +141,7 @@ function KdsView() {
                                 </Box>
                                 <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
                                     {order.status === 'CONFIRMED' && (
-                                        <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('startPreparing')}</Button>
+                                        <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('startPreparing', { context: user?.businessType })}</Button>
                                     )}
                                     {order.status === 'PENDING' && (
                                         <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('acceptAndPrepare')}</Button>

@@ -285,5 +285,19 @@
   "posTotal": "Total:",
   "enablePush": "Activez les notifications push pour être alerté instantanément lorsqu'une nouvelle commande arrive !",
   "enable": "Activer",
-  "refresh": "Actualiser"
+  "refresh": "Actualiser",
+  "kitchenView_BAKERY": "Écran de Préparation",
+  "kitchenView_RETAIL": "Écran d'Emballage",
+
+  "menuManagement_BAKERY": "Gestion de la Boulangerie",
+  "menuManagement_RETAIL": "Gestion du Catalogue",
+
+  "kitchenStaff_BAKERY": "Boulanger / Pâtissier",
+  "kitchenStaff_RETAIL": "Préparateur de Commandes",
+
+  "startPreparing_BAKERY": "Commencer la Cuisson",
+  "startPreparing_RETAIL": "Commencer l'Emballage",
+
+  "preparing_BAKERY": "En Cuisson",
+  "preparing_RETAIL": "En cours d'Emballage"
 }

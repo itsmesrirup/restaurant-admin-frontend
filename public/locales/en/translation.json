@@ -284,5 +284,19 @@
   "posTotal": "Total:",
   "enablePush": "Enable Push Notifications to get instantly alerted when a new order arrives!",
   "enable": "Enable",
-  "refresh": "Refresh"
+  "refresh": "Refresh",
+  "kitchenView_BAKERY": "Preparation Display",
+  "kitchenView_RETAIL": "Fulfillment Display",
+
+  "menuManagement_BAKERY": "Bakery Management",
+  "menuManagement_RETAIL": "Catalog Management",
+
+  "kitchenStaff_BAKERY": "Baker / Pastry Chef",
+  "kitchenStaff_RETAIL": "Packer / Fulfillment Staff",
+
+  "startPreparing_BAKERY": "Start Baking",
+  "startPreparing_RETAIL": "Start Packing",
+
+  "preparing_BAKERY": "Baking",
+  "preparing_RETAIL": "Packing"
 }

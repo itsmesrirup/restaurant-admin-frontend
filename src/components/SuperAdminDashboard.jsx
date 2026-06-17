@@ -11,6 +11,7 @@ function SuperAdminDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [restaurantName, setRestaurantName] = useState('');
     const [restaurantAddress, setRestaurantAddress] = useState('');
+    const [businessType, setBusinessType] = useState('RESTAURANT');
     const [userEmail, setUserEmail] = useState('');
     const [userPassword, setUserPassword] = useState('');
     const [userRestaurantId, setUserRestaurantId] = useState('');
@@ -39,13 +40,14 @@ function SuperAdminDashboard() {
 
     const handleCreateRestaurant = async (e) => {
         e.preventDefault();
-        const promise = apiClient.post('/api/restaurants', { name: restaurantName, address: restaurantAddress });
+        const promise = apiClient.post('/api/restaurants', { name: restaurantName, address: restaurantAddress, businessType: businessType });
         toast.promise(promise, {
             loading: 'Creating restaurant...',
             success: (newRestaurant) => {
                 setRestaurantName('');
                 setRestaurantAddress('');
-                return `Restaurant "${newRestaurant.name}" created with ID: ${newRestaurant.id}!`;
+                setBusinessType('RESTAURANT');
+                return `Business "${newRestaurant.name}" created with ID: ${newRestaurant.id}!`;
             },
             error: (err) => err.message,
         });
@@ -231,6 +233,11 @@ function SuperAdminDashboard() {
         });
     };
 
+    const handleBusinessTypeChange = (restaurantId, newType) => {
+        const promise = apiClient.patch(`/api/restaurants/${restaurantId}/business-type`, { businessType: newType });
+        toast.promise(promise, { loading: 'Updating...', success: () => { fetchAllRestaurants(); return 'Business Type updated!'; }, error: 'Failed' });
+    };
+
     return (
         <Box>
             <Typography variant="h4" gutterBottom>Super Admin Dashboard</Typography>
@@ -239,10 +246,22 @@ function SuperAdminDashboard() {
             <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
                     <Paper component="form" onSubmit={handleCreateRestaurant} sx={{ p: 2 }}>
-                        <Typography variant="h6">Create New Restaurant</Typography>
-                        <TextField fullWidth margin="normal" label="Restaurant Name" value={restaurantName} onChange={e => setRestaurantName(e.target.value)} required />
+                        <Typography variant="h6">Create New Business</Typography>
+                        <TextField fullWidth margin="normal" label="Business Name" value={restaurantName} onChange={e => setRestaurantName(e.target.value)} required />
                         <TextField fullWidth margin="normal" label="Address" value={restaurantAddress} onChange={e => setRestaurantAddress(e.target.value)} required />
-                        <Button type="submit" variant="contained">Create Restaurant</Button>
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel>Business Type</InputLabel>
+                            <Select
+                                value={businessType}
+                                label="Business Type"
+                                onChange={e => setBusinessType(e.target.value)}
+                            >
+                                <MenuItem value="RESTAURANT">Restaurant</MenuItem>
+                                <MenuItem value="BAKERY">Bakery / Boulangerie</MenuItem>
+                                <MenuItem value="RETAIL">Retail / Epicerie</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <Button type="submit" variant="contained">Create Business</Button>
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
@@ -363,6 +382,19 @@ function SuperAdminDashboard() {
                                         <MenuItem value="GRID">Static Grid</MenuItem>
                                         <MenuItem value="COLLAGE">Overlap Collage</MenuItem>
                                         <MenuItem value="MARQUEE">Moving Marquee</MenuItem>
+                                    </Select>
+                                </FormControl>
+
+                                <FormControl sx={{ m: 1, minWidth: 140 }} size="small">
+                                    <InputLabel>Business Type</InputLabel>
+                                    <Select
+                                        value={restaurant.businessType || 'RESTAURANT'}
+                                        label="Business Type"
+                                        onChange={(e) => handleBusinessTypeChange(restaurant.id, e.target.value)}
+                                    >
+                                        <MenuItem value="RESTAURANT">Restaurant</MenuItem>
+                                        <MenuItem value="BAKERY">Bakery / Boulangerie</MenuItem>
+                                        <MenuItem value="RETAIL">Retail / Epicerie</MenuItem>
                                     </Select>
                                 </FormControl>
 

@@ -200,7 +200,7 @@ function App() {
                         <ListItem key={item.textKey} disablePadding>
                             <ListItemButton selected={view === item.view} onClick={() => { setView(item.view); if(isMobile) handleDrawerToggle(); }}>
                                 <ListItemIcon sx={{ color: 'white' }}>{item.icon}</ListItemIcon>
-                                <ListItemText primary={t(item.textKey)} />
+                                <ListItemText primary={t(item.textKey, { context: user?.businessType })} />
                             </ListItemButton>
                         </ListItem>
                     ))}

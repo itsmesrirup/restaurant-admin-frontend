@@ -70,7 +70,7 @@ function UserManagement() {
                                 label={t('role')}
                                 onChange={e => setFormData({...formData, role: e.target.value})}
                             >
-                                <MenuItem value="KITCHEN_STAFF">{t('kitchenStaff')}</MenuItem>
+                                <MenuItem value="KITCHEN_STAFF">{t('kitchenStaff', { context: user?.businessType })}</MenuItem>
                                 <MenuItem value="WAITER">{t('waiter')}</MenuItem>
                             </Select>
                         </FormControl>

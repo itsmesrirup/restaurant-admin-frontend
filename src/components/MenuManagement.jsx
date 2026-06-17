@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Switch, FormControlLabel, Checkbox, Paper, Typography, Box, TextField, Button, Select, MenuItem, Grid, FormControl, InputLabel, Divider } from '@mui/material';
+import { Switch, FormControlLabel, Checkbox, Paper, Typography, Box, TextField, Button, Select, MenuItem, Grid, FormControl, InputLabel, Divider, Chip } from '@mui/material';
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import MenuItemOptionsModal from './MenuItemOptionsModal';
 import { useTranslation } from 'react-i18next';
 import { formatPrice } from '../utils/formatPrice';
 import usePageTitle from '../hooks/usePageTitle';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const renderCategoryOptions = (categories, level = 0) => {
     let options = [];
@@ -19,7 +21,7 @@ const renderCategoryOptions = (categories, level = 0) => {
     return options;
 };
 
-const INITIAL_FORM_STATE = { name: '', price: '', description: '', categoryId: '', isBundle: false, imageUrl: '' };
+const INITIAL_FORM_STATE = { name: '', price: '', description: '', categoryId: '', isBundle: false, imageUrl: '', priceUnit: '', advanceOrderLeadTimeHours: 0 };
 
 function MenuManagement() {
     const { t } = useTranslation();
@@ -55,6 +57,27 @@ function MenuManagement() {
 
     useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
+    // ✅ SMART GROUPING & SORTING ALGORITHM
+    const groupedMenuItems = useMemo(() => {
+        const groups = {};
+        
+        // 1. Group items by Category
+        menuItems.forEach(item => {
+            const catName = item.categoryName || t('uncategorized', 'Uncategorized');
+            if (!groups[catName]) {
+                groups[catName] = [];
+            }
+            groups[catName].push(item);
+        });
+
+        // 2. Sort items alphabetically inside each group
+        Object.keys(groups).forEach(key => {
+            groups[key].sort((a, b) => a.name.localeCompare(b.name));
+        });
+
+        return groups;
+    }, [menuItems, t]);
+
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
         const val = type === 'checkbox' ? checked : value;
@@ -73,7 +96,7 @@ function MenuManagement() {
         const payload = {
             name: formData.name, price: parseFloat(formData.price), description: formData.description,
             restaurantId: user.restaurantId, categoryId: parseInt(formData.categoryId), bundle: formData.isBundle,
-            imageUrl: formData.imageUrl
+            imageUrl: formData.imageUrl, priceUnit: formData.priceUnit, advanceOrderLeadTimeHours: parseInt(formData.advanceOrderLeadTimeHours) || 0
         };
         const promise = editingId ? apiClient.put(`/api/menu-items/${editingId}`, payload) : apiClient.post('/api/menu-items', payload);
         toast.promise(promise, {
@@ -88,7 +111,7 @@ function MenuManagement() {
         setFormData({
             name: item.name, price: item.price, description: item.description || '',
             categoryId: item.categoryId ? String(item.categoryId) : '', isBundle: item.bundle || false,
-            imageUrl: item.imageUrl || ''
+            imageUrl: item.imageUrl || '', priceUnit: item.priceUnit || '', advanceOrderLeadTimeHours: item.advanceOrderLeadTimeHours || 0
         });
     };
 
@@ -233,6 +256,7 @@ function MenuManagement() {
                     </Grid>
                     <Grid item xs={12} sm={6} md={2}>
                         <TextField label={t('price')} name="price" type="number" value={formData.price} onChange={handleInputChange} required fullWidth size="medium" InputProps={{ inputProps: { step: "0.01", min: "0" } }} />
+                        <TextField label="Unit (e.g. KG)" name="priceUnit" value={formData.priceUnit} onChange={handleInputChange} fullWidth size="medium" placeholder="Optional" />
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
                         <TextField label={t('descriptionOptional')} name="description" value={formData.description} onChange={handleInputChange} fullWidth size="medium" multiline rows={2} />
@@ -248,6 +272,21 @@ function MenuManagement() {
                             helperText={t('imageUrlHelper')}
                         />
                     </Grid>
+                    {/* ✅ ONLY SHOW FOR BAKERIES OR RETAIL */}
+                    {(user.businessType === 'BAKERY' || user.businessType === 'RETAIL') && (
+                        <Grid item xs={12} sm={4} md={3}>
+                            <TextField 
+                                label="Prep Time (Hours)" 
+                                name="advanceOrderLeadTimeHours" 
+                                type="number"
+                                value={formData.advanceOrderLeadTimeHours} 
+                                onChange={handleInputChange} 
+                                fullWidth 
+                                size="medium"
+                                helperText="0 for immediate. E.g., 48 for cakes."
+                            />
+                        </Grid>
+                    )}
                     {/* Row 2: Bundle & Button */}
                     <Grid item xs={12} sm={6} md={3}>
                         <FormControlLabel 
@@ -263,26 +302,74 @@ function MenuManagement() {
                     </Grid>
                 </Grid>
             </Paper>
-            <Typography variant="h6">{t('existingMenuItems')}</Typography>
-            <Divider sx={{ my: 1 }} />
-            {menuItems.map(item => (
-                <Paper key={item.id} sx={{ p: 2, my: 1 }}>
-                    <Grid container alignItems="center" spacing={2}>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="body1">
-                                <strong>{item.name}</strong> 
-                                {item.bundle && <span style={{fontSize: '0.8rem', color: 'gray', marginLeft: '8px'}}>(Formule)</span>}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">{item.categoryName || t('uncategorized')} - {formatPrice(item.price, 'EUR')}</Typography>
-                        </Grid>
-                        <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                            <FormControlLabel control={<Switch size="small" checked={item.isAvailable} onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)}/>} label={t('available')} />
-                            <Button size="small" variant="outlined" onClick={() => handleEdit(item)}>{t('edit')}</Button>
-                            {item.bundle && <Button size="small" variant="contained" onClick={() => openOptionsManager(item)}>{t('manageChoices')}</Button>}
-                            <Button size="small" variant="outlined" color="error" onClick={() => handleDeleteClick(item.id)}>{t('delete')}</Button>
-                        </Grid>
-                    </Grid>
-                </Paper>
+            <Typography variant="h5" sx={{ mt: 5, mb: 2 }}>{t('existingMenuItems')}</Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            {/* ✅ RENDER GROUPED AND SORTED ITEMS */}
+            {Object.keys(groupedMenuItems).sort().map(categoryName => (
+                <Box key={categoryName} sx={{ mb: 5 }}>
+                    {/* Category Header */}
+                    <Typography 
+                        variant="h6" 
+                        sx={{ 
+                            backgroundColor: 'primary.main', 
+                            color: 'white', 
+                            py: 1, 
+                            px: 2, 
+                            borderRadius: 1, 
+                            textTransform: 'uppercase',
+                            letterSpacing: '1px'
+                        }}
+                    >
+                        {categoryName}
+                    </Typography>
+
+                    {/* Items inside this Category */}
+                    {groupedMenuItems[categoryName].map(item => (
+                        <Paper key={item.id} sx={{ p: 2, my: 1, borderLeft: '4px solid #1976d2' }}>
+                            <Grid container alignItems="center" spacing={2}>
+                                <Grid item xs={12} md={6}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 0.5 }}>
+                                        <Typography variant="body1" sx={{ mr: 1 }}>
+                                            <strong>{item.name}</strong>
+                                        </Typography>
+
+                                        {item.advanceOrderLeadTimeHours > 0 && (
+                                            <Chip 
+                                                icon={<AccessTimeIcon sx={{ fontSize: '14px !important' }} />} 
+                                                label={`${item.advanceOrderLeadTimeHours}h Prep`} 
+                                                size="small" color="warning" sx={{ height: '22px', fontSize: '0.75rem', fontWeight: 'bold' }} 
+                                            />
+                                        )}
+
+                                        {item.bundle && (
+                                            <Chip 
+                                                label={item.options?.length > 0 ? `${item.options.length} Option Group(s)` : "Formule (No Options Set)"} 
+                                                size="small" color="info" variant="outlined" sx={{ height: '22px', fontSize: '0.75rem' }} 
+                                            />
+                                        )}
+                                    </Box>
+
+                                    <Typography variant="caption" color="text.secondary">
+                                        {formatPrice(item.price, 'EUR')}
+                                        {item.priceUnit && (
+                                            <span style={{ fontWeight: 'bold', color: '#444', marginLeft: '4px' }}>
+                                                / {item.priceUnit}
+                                            </span>
+                                        )}
+                                    </Typography>
+                                </Grid>
+
+                                <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                    <FormControlLabel control={<Switch size="small" checked={item.isAvailable} onChange={() => handleAvailabilityToggle(item.id, item.isAvailable)}/>} label={t('available')} />
+                                    <Button size="small" variant="outlined" onClick={() => handleEdit(item)}>{t('edit')}</Button>
+                                    {item.bundle && <Button size="small" variant="contained" onClick={() => openOptionsManager(item)}>{t('manageChoices')}</Button>}
+                                    <Button size="small" variant="outlined" color="error" onClick={() => handleDeleteClick(item.id)}>{t('delete')}</Button>
+                                </Grid>
+                            </Grid>
+                        </Paper>
+                    ))}
+                </Box>
             ))}
 
             {/* --- ADDED: The Dialog Component --- */}
