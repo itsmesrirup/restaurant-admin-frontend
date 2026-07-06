@@ -110,6 +110,16 @@ function WebsitePage() {
                 <Grid item xs={12}>
                     <TextField name="aboutUsText" label={t('aboutUs')} value={fullSettings.aboutUsText || ''} onChange={handleInputChange} fullWidth multiline rows={6} helperText={t('aboutUsHelper')} />
                 </Grid>
+                <Grid item xs={12}>
+                    <TextField 
+                        name="menuPdfUrl" 
+                        label="Menu PDF URL (Optional)" 
+                        value={fullSettings.menuPdfUrl || ''} 
+                        onChange={handleInputChange} 
+                        fullWidth 
+                        helperText="Paste a link to your PDF menu (e.g., from Cloudinary or Google Drive). If provided, this replaces the digital menu list on your website." 
+                    />
+                </Grid>
             </Grid>
 
             <Divider />
