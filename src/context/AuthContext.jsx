@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     // ✅ ADDED: Check if we are currently impersonating
-    const isImpersonating = !!localStorage.getItem('superAdminToken');
+    const isImpersonating = !!localStorage.getItem('superAdminToken') && user?.role !== 'SUPER_ADMIN';
 
     useEffect(() => {
         const fetchUserOnLoad = async () => {
@@ -140,6 +140,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         localStorage.removeItem('authToken');
+        localStorage.removeItem('superAdminToken');
         setToken(null);
         setUser(null);
     };

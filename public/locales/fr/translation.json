@@ -93,7 +93,7 @@
   "showAll": "Tout afficher",
   "forTable": "Pour la Table n°{{tableNumber}}",
   "status": "Statut : {{status}}",
-  "total": "Total : {{total}}",
+  "total": "Total",
   "confirm": "Confirmer",
   "ready": "Prêt",
   "deliver": "Livrer",

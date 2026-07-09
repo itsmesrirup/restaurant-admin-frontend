@@ -202,7 +202,7 @@ function OrderDashboard() {
                                                 );
                                             })}
                                         </Box>
-                                        <Typography variant="h6" sx={{ mt: 1 }}><strong>{t('total', { total: `€${order.totalPrice?.toFixed(2)}` })}</strong></Typography>
+                                        <Typography variant="h6" sx={{ mt: 1 }}><strong>{t('total')} : €{order.totalPrice?.toFixed(2)}</strong></Typography>
                                     </Box>
                                     
                                     <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee', display: 'flex', gap: 1, flexWrap: 'wrap' }}>

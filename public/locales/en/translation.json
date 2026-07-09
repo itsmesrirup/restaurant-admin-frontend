@@ -93,7 +93,7 @@
   "showAll": "Show All",
   "forTable": "For Table #{{tableNumber}}",
   "status": "Status: {{status}}",
-  "total": "Total: {{total}}",
+  "total": "Total",
   "confirm": "Confirm",
   "ready": "Ready",
   "deliver": "Deliver",

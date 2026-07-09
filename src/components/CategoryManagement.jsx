@@ -17,6 +17,8 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import usePageTitle from '../hooks/usePageTitle';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
 // --- ADDED: A recursive function to generate indented <MenuItem>s for the dropdown ---
 // This makes the subcategory hierarchy clear when selecting a parent.
@@ -36,7 +38,7 @@ const renderCategoryOptions = (categories, level = 0) => {
 };
 
 // --- The CategoryListItem is now a modern, collapsible Material-UI component ---
-const CategoryListItem = ({ category, level = 0, onUpdate, onDelete }) => {
+const CategoryListItem = ({ category, level = 0, index, totalItems, onUpdate, onDelete, onMove }) => {
     // --- ADDED: Get t function ---
     const { t } = useTranslation();
     const [isEditing, setIsEditing] = useState(false);
@@ -69,6 +71,18 @@ const CategoryListItem = ({ category, level = 0, onUpdate, onDelete }) => {
                     </Box>
                 ) : (
                     <>
+                        {/* THE ARROWS (Only show for top-level categories right now to keep UI clean) */}
+                        {level === 0 && (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', mr: 2 }}>
+                                <IconButton size="small" onClick={() => onMove(index, 'up')} disabled={index === 0} sx={{ py: 0 }}>
+                                    <ArrowUpwardIcon fontSize="inherit" />
+                                </IconButton>
+                                <IconButton size="small" onClick={() => onMove(index, 'down')} disabled={index === totalItems - 1} sx={{ py: 0 }}>
+                                    <ArrowDownwardIcon fontSize="inherit" />
+                                </IconButton>
+                            </Box>
+                        )}
+
                         {hasSubcategories && (
                             <IconButton edge="start" onClick={() => setIsOpen(!isOpen)} size="small">
                                 {isOpen ? <ExpandMore /> : <ChevronRight />}
@@ -83,8 +97,24 @@ const CategoryListItem = ({ category, level = 0, onUpdate, onDelete }) => {
             {hasSubcategories && (
                 <Collapse in={isOpen} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
-                        {category.subCategories.map(subCat => (
-                            <CategoryListItem key={subCat.id} category={subCat} level={level + 1} onUpdate={onUpdate} onDelete={onDelete} />
+                        {/* ✅ Added the subIndex mapping here */}
+                        {category.subCategories.map((subCat, subIndex) => (
+                            <CategoryListItem 
+                                key={subCat.id} 
+                                category={subCat} 
+                                level={level + 1} 
+                                
+                                // ✅ Passed the missing props down safely!
+                                index={subIndex} 
+                                totalItems={category.subCategories.length}
+                                onUpdate={onUpdate} 
+                                onDelete={onDelete}
+                                
+                                // We pass an empty function for now because the up/down arrows 
+                                // are hidden for subcategories (level > 0). 
+                                // If you ever want to reorder subcategories, you can build a sub-reorder function later!
+                                onMove={() => {}} 
+                            />
                         ))}
                     </List>
                 </Collapse>
@@ -164,6 +194,30 @@ function CategoryManagement() {
         setDeleteDialogOpen(true);
     };
 
+    // ✅ NEW: Logic to move categories up and down
+    const moveCategory = (index, direction) => {
+        const newCategories = [...categories];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        
+        // Safety check (can't move top item up, or bottom item down)
+        if (targetIndex < 0 || targetIndex >= newCategories.length) return;
+
+        // Swap the two categories in the array
+        const temp = newCategories[index];
+        newCategories[index] = newCategories[targetIndex];
+        newCategories[targetIndex] = temp;
+
+        // Update the UI instantly
+        setCategories(newCategories);
+
+        // Send the new ordered IDs to the backend
+        const orderedIds = newCategories.map(c => c.id);
+        apiClient.patch('/api/categories/reorder', orderedIds).catch(() => {
+            toast.error(t('failedToReorder'));
+            fetchCategories(); // Revert to original if it fails
+        });
+    };
+
     // --- NEW: Confirm Delete ---
     const confirmDelete = () => {
         if (categoryToDelete) {
@@ -240,12 +294,15 @@ function CategoryManagement() {
                     <Typography sx={{ p: 2, color: 'text.secondary' }}>{t('noCategoriesFound')}</Typography>
                 ) : (
                     <List>
-                        {categories.map(cat => (
+                        {categories.map((cat, index) => (
                             <CategoryListItem 
                                 key={cat.id} 
                                 category={cat} 
+                                index={index}
+                                totalItems={categories.length}
                                 onUpdate={handleUpdateCategory}
                                 onDelete={handleDeleteClick}
+                                onMove={moveCategory}
                             />
                         ))}
                     </List>
