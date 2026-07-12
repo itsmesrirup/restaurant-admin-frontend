@@ -148,8 +148,23 @@ function PosPage() {
 
     const displayedItems = useMemo(() => {
         if (selectedCategory === 'ALL') return menuItems;
-        return menuItems.filter(item => item.categoryId === selectedCategory);
-    }, [menuItems, selectedCategory]);
+
+        // 1. Find the parent category object the waiter just clicked
+        const parentCategory = categories.find(cat => cat.id === selectedCategory);
+        
+        // 2. Start a list of valid IDs with the parent's ID
+        let validCategoryIds = [selectedCategory];
+        
+        // 3. If this parent has subcategories, add all their IDs to our valid list!
+        if (parentCategory && parentCategory.subCategories) {
+            parentCategory.subCategories.forEach(sub => {
+                validCategoryIds.push(sub.id);
+            });
+        }
+        
+        // 4. Return any menu item that matches ANY of those IDs
+        return menuItems.filter(item => validCategoryIds.includes(item.categoryId));
+    }, [menuItems, selectedCategory, categories]);
 
     // --- TICKET COMPONENT ---
     const TicketUI = (
