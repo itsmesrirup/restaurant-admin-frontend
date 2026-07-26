@@ -298,5 +298,7 @@
   "startPreparing_RETAIL": "Start Packing",
 
   "preparing_BAKERY": "Baking",
-  "preparing_RETAIL": "Packing"
+  "preparing_RETAIL": "Packing",
+
+  "enableDineInOrders": "Enable Dine-In Orders (Customers can choose to eat at the restaurant)"
 }

@@ -299,5 +299,7 @@
   "startPreparing_RETAIL": "Commencer l'Emballage",
 
   "preparing_BAKERY": "En Cuisson",
-  "preparing_RETAIL": "En cours d'Emballage"
+  "preparing_RETAIL": "En cours d'Emballage",
+
+  "enableDineInOrders": "Activer les commandes sur place (Les clients peuvent choisir de manger au restaurant)"
 }

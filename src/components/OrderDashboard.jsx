@@ -149,6 +149,14 @@ function OrderDashboard() {
                                     <Box>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                             <Typography variant="h6">{t('orderNum', { orderId: order.orderNumber })}</Typography>
+
+                                            {/* ✅ NEW: SHOW DINE-IN OR TAKEAWAY */}
+                                            {order.diningOption === 'DINE_IN' ? (
+                                                <Chip label="DINE-IN" color="primary" size="small" sx={{ fontWeight: 'bold', fontSize: '0.9rem' }} />
+                                            ) : (
+                                                <Chip label="TAKEAWAY" color="default" size="small" variant="outlined" />
+                                            )}
+
                                             {order.tableNumber && <Chip label={t('forTable', { tableNumber: order.tableNumber })} color="primary" size="small" />}
 
                                             {/* NEW: ORDER SOURCE CHIP */}

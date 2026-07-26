@@ -223,6 +223,17 @@ function SettingsPage() {
                             label={t('enableQrOrdering')}
                             disabled={!canUseQrOrdering}
                         />
+                        <FormControlLabel
+                            control={
+                                <Switch 
+                                    checked={fullSettings.dineInOrdersEnabled ?? true} 
+                                    onChange={handleToggleChange} 
+                                    name="dineInOrdersEnabled" 
+                                    color="primary"
+                                />
+                            }
+                            label={t('enableDineInOrders')}
+                        />
                     </span>
                 </Tooltip>
                  <br />

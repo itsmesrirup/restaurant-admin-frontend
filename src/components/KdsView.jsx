@@ -94,6 +94,13 @@ function KdsView() {
                                 <Box>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <Typography variant="h5" fontWeight="bold">{t('orderNum', { orderId: order.orderNumber })}</Typography>
+
+                                        {/* ✅ NEW: SHOW DINE-IN OR TAKEAWAY */}
+                                        {order.diningOption === 'DINE_IN' ? (
+                                            <Chip label="DINE-IN" color="primary" size="small" sx={{ fontWeight: 'bold', fontSize: '0.9rem' }} />
+                                        ) : (
+                                            <Chip label="TAKEAWAY" color="default" size="small" variant="outlined" />
+                                        )}
                                         
                                         {order.tableNumber && <Chip label={t('tableNum', { tableNumber: order.tableNumber })} color="secondary" />}
 
