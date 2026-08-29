@@ -238,6 +238,15 @@ function SuperAdminDashboard() {
         toast.promise(promise, { loading: 'Updating...', success: () => { fetchAllRestaurants(); return 'Business Type updated!'; }, error: 'Failed' });
     };
 
+    const handleDeliveryChange = (restaurantId, enabled, fee) => {
+        const promise = apiClient.patch(`/api/restaurants/${restaurantId}/delivery`, { deliveryEnabled: enabled, deliveryFee: fee });
+        toast.promise(promise, {
+            loading: 'Updating delivery...',
+            success: () => { fetchAllRestaurants(); return 'Delivery updated!'; },
+            error: 'Failed to update delivery.'
+        });
+    };
+
     return (
         <Box>
             <Typography variant="h4" gutterBottom>Super Admin Dashboard</Typography>
@@ -412,6 +421,29 @@ function SuperAdminDashboard() {
                                     sx={{ width: 200, m: 1 }}
                                     helperText="Click away to save"
                                 />
+
+                                {/* ✅ NEW: DELIVERY TOGGLE & FEE */}
+                                <FormControlLabel
+                                    control={
+                                        <Switch 
+                                            size="small"
+                                            checked={restaurant.deliveryEnabled || false} 
+                                            onChange={(e) => handleDeliveryChange(restaurant.id, e.target.checked, restaurant.deliveryFee || 0)} 
+                                            color="secondary"
+                                        />
+                                    }
+                                    label={<Typography variant="body2">Delivery</Typography>}
+                                />
+                                {restaurant.deliveryEnabled && (
+                                    <TextField
+                                        size="small"
+                                        label="Delivery Fee (€)"
+                                        type="number"
+                                        defaultValue={restaurant.deliveryFee || 0}
+                                        onBlur={(e) => handleDeliveryChange(restaurant.id, true, parseFloat(e.target.value))}
+                                        sx={{ width: 120, m: 1 }}
+                                    />
+                                )}
 
                                 <FormControlLabel
                                     control={
