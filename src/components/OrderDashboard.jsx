@@ -1,61 +1,70 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Divider, Chip } from '@mui/material';
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
+import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Divider, Chip, Alert, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale'; 
 import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
-import usePageTitle from '../hooks/usePageTitle';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import PersonIcon from '@mui/icons-material/Person';
+import PhoneIcon from '@mui/icons-material/Phone';
+import CloseIcon from '@mui/icons-material/Close';
 import { useOrderWebSocket } from '../hooks/useOrderWebSocket';
+import usePageTitle from '../hooks/usePageTitle';
 
-function OrderDashboard() {
+export default function OrderDashboard() {
     const { t } = useTranslation();
-    usePageTitle(t('liveOrders')); // "Live Orders | Tablo"
+    usePageTitle(t('liveOrders'));
     const { user } = useAuth();
+    
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState('ALL');
     const [page, setPage] = useState(1);
-    const ordersPerPage = 10;
+    const ordersPerPage = 12;
 
-    // --- ADDED: State for Cancel Dialog ---
+    // --- MODAL / DIALOG STATES ---
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [delayDialogOpen, setDelayDialogOpen] = useState(false);
     const [orderToCancel, setOrderToCancel] = useState(null);
+    const [delayOrderId, setDelayOrderId] = useState(null);
+    const [selectedOrderId, setSelectedOrderId] = useState(null);
 
-    // 1. Initial Load
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const data = await apiClient.get('/api/orders/by-restaurant');
-                data.sort((a, b) => b.id - a.id); // Newest first
-                setOrders(data);
-            } catch (error) {
-                if (isLoading) toast.error("Could not load order history.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        if (user) fetchOrders();
-    }, [user]);
+    const [notifPermission, setNotifPermission] = useState(
+        "Notification" in window ? Notification.permission : "denied"
+    );
 
-    // 2. Activate WebSocket
+    const fetchOrders = useCallback(async () => {
+        if (!user) return;
+        setIsLoading(true);
+        try {
+            const data = await apiClient.get('/api/orders/by-restaurant');
+            data.sort((a, b) => {
+                if (a.pickupTime && b.pickupTime) return new Date(a.pickupTime) - new Date(b.pickupTime);
+                if (!a.pickupTime && b.pickupTime) return -1;
+                if (a.pickupTime && !b.pickupTime) return 1;
+                return a.id - b.id;
+            });
+            setOrders(data);
+        } catch (error) {
+            toast.error(t('failedToLoadOrders', 'Could not load order history.'));
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user, t]);
+
+    useEffect(() => { fetchOrders(); }, [fetchOrders]);
     useOrderWebSocket(setOrders, false);
 
-    // --- NEW: Open Dialog Handler ---
-    const handleCancelClick = (orderId) => {
-        setOrderToCancel(orderId);
-        setCancelDialogOpen(true);
-    };
-
-    // --- NEW: Confirm Cancellation Handler ---
-    const confirmCancel = () => {
-        if (orderToCancel) {
-            handleUpdateStatus(orderToCancel, 'CANCELLED');
+    const requestNotificationPermission = async () => {
+        if (!("Notification" in window)) {
+            toast.error("This browser does not support desktop notification");
+            return;
         }
-        setCancelDialogOpen(false);
-        setOrderToCancel(null);
+        const permission = await Notification.requestPermission();
+        setNotifPermission(permission);
+        if (permission === 'granted') toast.success("Push notifications enabled!");
     };
 
     const handleUpdateStatus = (orderId, newStatus) => {
@@ -63,31 +72,30 @@ function OrderDashboard() {
         toast.promise(promise, {
             loading: 'Updating status...',
             success: (updatedOrder) => {
-                setOrders(prevOrders => 
-                    prevOrders.map(o => o.id === orderId ? { ...o, status: updatedOrder.status } : o)
-                );
+                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: updatedOrder.status } : o));
                 return 'Order status updated!';
             },
             error: 'Failed to update status.'
         });
     };
+
+    const confirmCancel = () => {
+        if (orderToCancel) handleUpdateStatus(orderToCancel, 'CANCELLED');
+        setCancelDialogOpen(false);
+        setOrderToCancel(null);
+        setSelectedOrderId(null); // Close details if open
+    };
+
+    const sendDelayNotification = (minutes) => {
+        const promise = apiClient.post(`/api/orders/${delayOrderId}/notify-delay`, { delayMinutes: minutes });
+        toast.promise(promise, { loading: 'Sending delay notification...', success: `Customer notified.`, error: 'Failed.' });
+        setDelayDialogOpen(false);
+    };
     
     const filteredOrders = useMemo(() => {
-        // --- ADDED: Scheduled Filter Logic ---
-        if (filter === 'SCHEDULED') {
-            // Show orders that HAVE a pickup time and are NOT completed/cancelled
-            return orders.filter(order => 
-                order.pickupTime !== null && 
-                order.status !== 'DELIVERED' && 
-                order.status !== 'CANCELLED'
-            );
-        }
-
-        // For other tabs, generally hide the future scheduled ones to keep "Live" clean
-        // (Optional: You can decide if "ALL" should include scheduled or not)
+        if (filter === 'SCHEDULED') return orders.filter(o => o.pickupTime !== null && o.status !== 'DELIVERED' && o.status !== 'CANCELLED');
         if (filter === 'ALL') return orders;
-        
-        return orders.filter(order => order.status === filter);
+        return orders.filter(o => o.status === filter);
     }, [orders, filter]);
     
     const paginatedOrders = useMemo(() => {
@@ -95,191 +103,254 @@ function OrderDashboard() {
         return filteredOrders.slice(startIndex, startIndex + ordersPerPage);
     }, [filteredOrders, page, ordersPerPage]);
 
-    const handlePageChange = (event, value) => {
-        setPage(value);
-        window.scrollTo(0, 0);
-    };
-
     const showPagination = filteredOrders.length > ordersPerPage;
 
-    if (isLoading) {
-        return <CircularProgress />;
-    }
+    // Derive the selected order safely
+    const selectedOrder = orders.find(o => o.id === selectedOrderId);
 
     return (
         <Box sx={{ pb: 4 }}>
-            <Typography variant="h4" gutterBottom>{t('liveOrdersTitle')}</Typography>
-            <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                <Typography variant="body1"><strong>{t('filter')}:</strong></Typography>
-                {/* --- ADDED: Scheduled Button --- */}
-                <Button 
-                    variant={filter === 'SCHEDULED' ? 'contained' : 'outlined'} 
-                    color="secondary" // Distinct color
-                    startIcon={<AccessTimeIcon />}
-                    onClick={() => { setFilter('SCHEDULED'); setPage(1); }}
-                >
-                    {t('scheduledFilter')}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+                <Typography variant="h4" sx={{ m: 0 }}>{t('liveOrdersTitle')}</Typography>
+                <Button variant="outlined" color="primary" startIcon={<RefreshIcon />} onClick={fetchOrders} disabled={isLoading}>
+                    {t('refresh', 'Refresh')}
                 </Button>
+            </Box>
 
+            {notifPermission === 'default' && (
+                <Alert severity="info" sx={{ mb: 3 }} action={<Button color="inherit" size="small" variant="outlined" onClick={requestNotificationPermission}>{t('enable', 'Enable')}</Button>}>
+                    {t('enablePush', 'Enable Push Notifications to get instantly alerted when a new order arrives!')}
+                </Alert>
+            )}
+
+            <Box sx={{ mb: 4, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Typography variant="body1"><strong>{t('filter')}:</strong></Typography>
+                <Button variant={filter === 'SCHEDULED' ? 'contained' : 'outlined'} color="secondary" startIcon={<AccessTimeIcon />} onClick={() => { setFilter('SCHEDULED'); setPage(1); }}>{t('scheduledFilter')}</Button>
                 <Button variant={filter === 'PENDING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PENDING'); setPage(1); }}>{t('pending')}</Button>
                 <Button variant={filter === 'CONFIRMED' ? 'contained' : 'outlined'} onClick={() => { setFilter('CONFIRMED'); setPage(1); }}>{t('confirmed')}</Button>
                 <Button variant={filter === 'PREPARING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PREPARING'); setPage(1); }}>{t('preparing')}</Button>
                 <Button variant={filter === 'ALL' ? 'contained' : 'outlined'} onClick={() => { setFilter('ALL'); setPage(1); }}>{t('showAll')}</Button>
             </Box>
             
-            {filteredOrders.length > 0 ? (
+            {isLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>
+            ) : filteredOrders.length > 0 ? (
                 <>
-                    <Grid container spacing={3} alignItems="stretch">
-                        {paginatedOrders.map(order => (
-                            <Grid item xs={12} sm={6} lg={4} key={order.id} sx={{ display: 'flex' }}>
-                                {/* --- FIX: The Paper component now fills the flex container --- */}
-                                <Paper 
-                                    elevation={3} 
-                                    sx={{ 
-                                        p: 2, 
-                                        width: '100%',
-                                        display: 'flex', 
-                                        flexDirection: 'column', 
-                                        justifyContent: 'space-between', // Push footer to bottom
-                                        borderRadius: 2, 
-                                        border: order.pickupTime ? '2px solid #9c27b0' : 'none',
-                                        // Crucial: No fixed height here! Let content dictate height.
-                                    }}
-                                >
-                                    <Box>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <Typography variant="h6">{t('orderNum', { orderId: order.orderNumber })}</Typography>
+                    {/* ✅ FIXED GRID: Removed alignItems="stretch" and simplified flex layouts */}
+                    {/* ✅ BULLETPROOF GRID: Removed 'flex' tricks so cards stack naturally without overlapping! */}
+                    <Grid container spacing={2}>
+                        {paginatedOrders.map(order => {
+                            const itemCount = order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
-                                            {/* ✅ NEW: SHOW DINE-IN OR TAKEAWAY */}
-                                            {order.diningOption === 'DINE_IN' ? (
-                                                <Chip label="DINE-IN" color="primary" size="small" sx={{ fontWeight: 'bold', fontSize: '0.9rem' }} />
-                                            ) : order.diningOption === 'DELIVERY' ? (
-                                            <Chip label="DELIVERY" color="secondary" size="small" sx={{ fontWeight: 'bold', fontSize: '0.9rem' }} />
-                                            ) : (
-                                                <Chip label="TAKEAWAY" color="default" size="small" variant="outlined" />
-                                            )}
-
-                                            {/* ✅ DISPLAY THE ADDRESS FOR THE DRIVER */}
-                                            {order.diningOption === 'DELIVERY' && order.deliveryAddress && (
-                                                <Box sx={{ mt: 1, p: 1, bgcolor: '#fff3e0', borderRadius: 1, border: '1px solid #ffcc80' }}>
-                                                    <Typography variant="body2" fontWeight="bold">📍 {t('deliveryAddress')}:</Typography>
-                                                    <Typography variant="body2">{order.deliveryAddress}</Typography>
-                                                </Box>
-                                            )}
-
-                                            {order.tableNumber && <Chip label={t('forTable', { tableNumber: order.tableNumber })} color="primary" size="small" />}
-
-                                            {/* NEW: ORDER SOURCE CHIP */}
+                            return (
+                                <Grid item xs={12} sm={6} md={4} lg={3} key={order.id}>
+                                    <Paper 
+                                        elevation={2} 
+                                        sx={{ 
+                                            p: 2, 
+                                            borderRadius: 2, 
+                                            cursor: 'pointer', 
+                                            transition: 'transform 0.2s',
+                                            borderTop: order.status === 'PENDING' ? '4px solid #ff9800' : (order.status === 'READY_FOR_PICKUP' ? '4px solid #4caf50' : '4px solid transparent'),
+                                            '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 }
+                                        }}
+                                        onClick={() => setSelectedOrderId(order.id)}
+                                    >
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                            <Typography variant="h6" fontWeight="bold">#{order.orderNumber}</Typography>
+                                            <Typography variant="caption" sx={{ fontWeight: 'bold', color: order.status === 'PENDING' ? '#ff9800' : 'text.secondary', textAlign: 'right' }}>
+                                                {t(`orderStatus.${order.status}`, { defaultValue: order.status })}
+                                            </Typography>
+                                        </Box>
+                                        
+                                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2 }}>
                                             {order.source === 'POS' ? (
                                                 <Chip icon={<PointOfSaleIcon />} label="POS" size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />
                                             ) : (
                                                 <Chip icon={<PhoneIphoneIcon />} label="Online" size="small" color="info" sx={{ fontWeight: 'bold' }} />
                                             )}
-                                            
-                                            {/* --- NEW: Payment Status Chip --- */}
+
                                             {order.paymentIntentId ? (
                                                 <Chip label="PAID" color="success" size="small" sx={{ fontWeight: 'bold' }} />
                                             ) : (
                                                 <Chip label="UNPAID" color="warning" size="small" variant="outlined" />
                                             )}
 
+                                            {order.diningOption === 'DINE_IN' ? <Chip label="DINE-IN" color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> : 
+                                             order.diningOption === 'DELIVERY' ? <Chip label="DELIVERY" color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> : 
+                                             <Chip label="TAKEAWAY" size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />}
+
+                                            {order.tableNumber && <Chip label={t('tableNum', { tableNumber: order.tableNumber })} color="primary" size="small" sx={{ fontWeight: 'bold' }} />}
                                         </Box>
-                                        
-                                        {order.tableNumber ? (
-                                            // Case 1: It has a table number -> Show "Dine-in"
-                                            <Typography variant="body1" sx={{ mt: 1, color: 'text.primary', fontWeight: 'bold' }}>
-                                                {t('dineIn')}
-                                            </Typography>
-                                        ) : order.pickupTime ? (
-                                            // Case 2: No table, but has specific time -> Show Time
-                                            <Typography variant="body1" sx={{ mt: 1, color: 'secondary.main', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+
+                                        {order.pickupTime ? (
+                                            <Typography variant="body2" sx={{ color: 'secondary.main', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                 <AccessTimeIcon fontSize="small"/> 
-                                                {new Date(order.pickupTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
+                                                {new Date(order.pickupTime).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
                                             </Typography>
                                         ) : (
-                                            // Case 3: No table, No specific time -> Show "Pickup: ASAP"
-                                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{t('pickupAsap')}</Typography>
+                                            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                <AccessTimeIcon fontSize="small"/> {t('pickupAsap', 'ASAP')}
+                                            </Typography>
                                         )}
 
-                                        <Typography variant="body1" sx={{ mt: 1 }}><strong>{t('statusLabel')}</strong> {t(`orderStatus.${order.status}`, { defaultValue: order.status })}</Typography>
-                                        
-                                        <Divider sx={{ my: 1 }} />
-                                        <Box component="ul" sx={{ listStyle: 'none', p: 0, mt: 1 }}>
-                                            {order.items?.map((item, index) => {
-                                                let selectedOptions = [];
-                                                if (item.selectedOptions) try { selectedOptions = JSON.parse(item.selectedOptions); } catch (e) {}
-                                                return (
-                                                    <li key={`${item.menuItemId}-${index}`}>
-                                                        {item.quantity} x {item.name}
-                                                        {selectedOptions.length > 0 && (
-                                                            <Box component="ul" sx={{ pl: 2, fontSize: '0.9rem', color: 'text.secondary' }}>
-                                                                {selectedOptions.map((opt, i) => <li key={i}>{opt}</li>)}
-                                                            </Box>
-                                                        )}
-                                                    </li>
-                                                );
-                                            })}
+                                        <Divider sx={{ my: 1.5 }} />
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="body2" color="text.secondary">{itemCount} items</Typography>
+                                            <Typography variant="subtitle1" fontWeight="bold">€{order.totalPrice?.toFixed(2)}</Typography>
                                         </Box>
-                                        <Typography variant="h6" sx={{ mt: 1 }}><strong>{t('total')} : €{order.totalPrice?.toFixed(2)}</strong></Typography>
-                                    </Box>
-                                    
-                                    <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee', display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'CONFIRMED')}>{t('confirm')}</Button>
-                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('preparing')}</Button>
-                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'READY_FOR_PICKUP')}>{t('ready')}</Button>
-                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'DELIVERED')}>{t('deliver')}</Button>
-
-                                        {/* --- ADDED: Cancel Button --- */}
-                                        {/* Only show if order is not completed/cancelled yet */}
-                                        {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
-                                            <Button 
-                                                size="small" 
-                                                variant="outlined" 
-                                                color="error" // Red color
-                                                onClick={() => handleCancelClick(order.id)}
-                                            >
-                                                {t('cancel')}
-                                            </Button>
-                                        )}
-                                    </Box>
-                                </Paper>
-                            </Grid>
-                        ))}
+                                    </Paper>
+                                </Grid>
+                            );
+                        })}
                     </Grid>
+
                     {showPagination && (
                         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                            <Pagination 
-                                count={Math.ceil(filteredOrders.length / ordersPerPage)} 
-                                page={page} 
-                                onChange={handlePageChange}
-                                color="primary"
-                            />
+                            <Pagination count={Math.ceil(filteredOrders.length / ordersPerPage)} page={page} onChange={handlePageChange} color="primary" />
                         </Box>
                     )}
                 </>
             ) : (
-                <Typography>{t('noOrdersMatchFilter')}</Typography>
+                <Typography color="text.secondary">{t('noOrdersMatchFilter', 'No orders match this filter.')}</Typography>
             )}
-            {/* --- ADDED: The Confirmation Dialog --- */}
-            <Dialog
-                open={cancelDialogOpen}
-                onClose={() => setCancelDialogOpen(false)}
+
+            {/* ========================================== */}
+            {/* ✅ THE ORDER DETAILS DIALOG (POP-UP)       */}
+            {/* ========================================== */}
+            <Dialog 
+                open={!!selectedOrder} 
+                onClose={() => setSelectedOrderId(null)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: 3 } }}
             >
-                <DialogTitle>{t('confirmCancellationTitle')}</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        {t('confirmCancellationText')}
-                    </DialogContentText>
-                </DialogContent>
+                {selectedOrder && (
+                    <>
+                        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#f8f9fa', borderBottom: '1px solid #eee' }}>
+                            <Box>
+                                <Typography variant="h5" fontWeight="bold">Order #{selectedOrder.orderNumber}</Typography>
+                                {/* Display Full Date in Modal too */}
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <AccessTimeIcon fontSize="inherit"/> 
+                                    {selectedOrder.pickupTime 
+                                        ? new Date(selectedOrder.pickupTime).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }) 
+                                        : t('pickupAsap', 'ASAP')}
+                                </Typography>
+                            </Box>
+                            <IconButton onClick={() => setSelectedOrderId(null)}><CloseIcon /></IconButton>
+                        </DialogTitle>
+                        
+                        <DialogContent sx={{ p: 3 }}>
+                            
+                            {selectedOrder.specialInstructions && (
+                                <Box sx={{ mb: 3, p: 2, bgcolor: '#fff3cd', borderLeft: '4px solid #ff9800', borderRadius: 1 }}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#e65100' }}>⚠️ Special Instructions:</Typography>
+                                    <Typography variant="body2" sx={{ color: '#e65100' }}>{selectedOrder.specialInstructions}</Typography>
+                                </Box>
+                            )}
+
+                            {selectedOrder.diningOption === 'DELIVERY' && selectedOrder.deliveryAddress && (
+                                <Box sx={{ mb: 3, p: 2, bgcolor: '#e3f2fd', borderLeft: '4px solid #2196f3', borderRadius: 1 }}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#0d47a1' }}>🛵 Delivery Address:</Typography>
+                                    <Typography variant="body2" sx={{ color: '#0d47a1' }}>{selectedOrder.deliveryAddress}</Typography>
+                                </Box>
+                            )}
+
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>Order Items</Typography>
+                            <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, mb: 3 }}>
+                                {selectedOrder.items?.map((item, index) => {
+                                    let selectedOptions = [];
+                                    if (item.selectedOptions) try { selectedOptions = JSON.parse(item.selectedOptions); } catch (e) {}
+                                    return (
+                                        <Box component="li" key={index} sx={{ mb: 1.5, pb: 1.5, borderBottom: '1px dashed #eee' }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <Typography variant="body1" fontWeight="bold">{item.quantity}x {item.name}</Typography>
+                                            </Box>
+                                            {selectedOptions.length > 0 && (
+                                                <Box component="ul" sx={{ pl: 2, mt: 0.5, fontSize: '0.9rem', color: 'text.secondary' }}>
+                                                    {selectedOptions.map((opt, i) => <li key={i}><strong>{opt.optionName}:</strong> {opt.choices.join(', ')}</li>)}
+                                                </Box>
+                                            )}
+                                        </Box>
+                                    );
+                                })}
+                            </Box>
+                            
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+                                <Typography variant="h6">{t('total')}</Typography>
+                                <Typography variant="h6" fontWeight="bold">€{selectedOrder.totalPrice?.toFixed(2)}</Typography>
+                            </Box>
+
+                            {selectedOrder.customerName && (
+                                <Box sx={{ p: 2, bgcolor: '#f0f4f8', borderRadius: 2, border: '1px solid #d9e2ec' }}>
+                                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>Customer Details</Typography>
+                                    <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 'bold', color: '#334e68' }}>
+                                        <PersonIcon fontSize="small" /> {selectedOrder.customerName}
+                                    </Typography>
+                                    {selectedOrder.customerPhone && (
+                                        <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, color: '#334e68' }}>
+                                            <PhoneIcon fontSize="small" /> 
+                                            <a href={`tel:${selectedOrder.customerPhone}`} style={{ color: '#005cc5', textDecoration: 'none', fontWeight: 'bold' }}>
+                                                {selectedOrder.customerPhone}
+                                            </a>
+                                        </Typography>
+                                    )}
+                                </Box>
+                            )}
+
+                        </DialogContent>
+                        
+                        {/* ✅ FIXED MODAL BUTTON ALIGNMENT: 
+                            Split into two boxes (Left Actions vs Right Workflow) so they align beautifully 
+                        */}
+                        <DialogActions sx={{ p: 2, bgcolor: '#f8f9fa', borderTop: '1px solid #eee', justifyContent: 'space-between' }}>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                {selectedOrder.status !== 'DELIVERED' && selectedOrder.status !== 'CANCELLED' && (
+                                    <>
+                                        <Button size="small" variant="outlined" color="error" onClick={() => { setOrderToCancel(selectedOrder.id); setCancelDialogOpen(true); }}>
+                                            {t('cancel')}
+                                        </Button>
+                                        <Button size="small" variant="outlined" color="warning" onClick={() => { setDelayOrderId(selectedOrder.id); setDelayDialogOpen(true); }}>
+                                            {t('notifyDelay', 'Delay')}
+                                        </Button>
+                                    </>
+                                )}
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                {selectedOrder.status === 'PENDING' && <Button variant="contained" color="warning" onClick={() => handleUpdateStatus(selectedOrder.id, 'CONFIRMED')}>{t('confirm')}</Button>}
+                                {selectedOrder.status === 'CONFIRMED' && <Button variant="contained" color="warning" onClick={() => handleUpdateStatus(selectedOrder.id, 'PREPARING')}>{t('preparing')}</Button>}
+                                {selectedOrder.status === 'PREPARING' && <Button variant="contained" color="success" onClick={() => handleUpdateStatus(selectedOrder.id, 'READY_FOR_PICKUP')}>{t('ready')}</Button>}
+                                {selectedOrder.status === 'READY_FOR_PICKUP' && <Button variant="contained" color="primary" onClick={() => handleUpdateStatus(selectedOrder.id, 'DELIVERED')}>{t('deliver')}</Button>}
+                            </Box>
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
+
+            {/* Cancel Confirm Dialog */}
+            <Dialog open={cancelDialogOpen} onClose={() => setCancelDialogOpen(false)}>
+                <DialogTitle>{t('confirmCancellationTitle', 'Cancel Order?')}</DialogTitle>
+                <DialogContent><DialogContentText>{t('confirmCancellationText', 'Are you sure you want to cancel this order?')}</DialogContentText></DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setCancelDialogOpen(false)}>{t('keepOrder')}</Button>
-                    <Button onClick={confirmCancel} color="error" variant="contained" autoFocus>
-                        {t('confirmCancel')}
-                    </Button>
+                    <Button onClick={() => setCancelDialogOpen(false)}>{t('keepOrder', 'Keep Order')}</Button>
+                    <Button onClick={confirmCancel} color="error" variant="contained">{t('confirmCancel', 'Yes, Cancel')}</Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Delay Dialog */}
+            <Dialog open={delayDialogOpen} onClose={() => setDelayDialogOpen(false)}>
+                <DialogTitle>{t('notifyDelayTitle', 'Notify Customer of Delay')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>{t('notifyDelayMessage', 'How many minutes late will this order be?')}</DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDelayDialogOpen(false)}>{t('cancel', 'Cancel')}</Button>
+                    <Button onClick={() => sendDelayNotification(15)} color="warning" variant="contained">+15 {t('mins', 'Mins')}</Button>
+                    <Button onClick={() => sendDelayNotification(30)} color="warning" variant="contained">+30 {t('mins', 'Mins')}</Button>
+                </DialogActions>
+            </Dialog>
+
         </Box>
     );
 }
-
-export default OrderDashboard;

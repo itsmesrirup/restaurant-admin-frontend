@@ -300,5 +300,9 @@
   "preparing_BAKERY": "Baking",
   "preparing_RETAIL": "Packing",
 
-  "enableDineInOrders": "Enable Dine-In Orders (Customers can choose to eat at the restaurant)"
+  "enableDineInOrders": "Enable Dine-In Orders (Customers can choose to eat at the restaurant)",
+  "notifyDelay": "Delay",
+  "notifyDelayTitle": "Notify Customer of Delay",
+  "notifyDelayMessage": "How many minutes late will this order be?",
+  "mins": "Mins"
 }

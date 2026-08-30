@@ -1,0 +1,293 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth, apiClient } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
+import { Box, Typography, Button, Paper, Grid, Pagination, CircularProgress, Divider, Chip } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
+import { useTranslation } from 'react-i18next';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import PointOfSaleIcon from '@mui/icons-material/PointOfSale'; 
+import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
+import usePageTitle from '../hooks/usePageTitle';
+import { useOrderWebSocket } from '../hooks/useOrderWebSocket';
+
+function OrderDashboard() {
+    const { t } = useTranslation();
+    usePageTitle(t('liveOrders')); // "Live Orders | Tablo"
+    const { user } = useAuth();
+    const [orders, setOrders] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [filter, setFilter] = useState('ALL');
+    const [page, setPage] = useState(1);
+    const ordersPerPage = 10;
+
+    // --- ADDED: State for Cancel Dialog ---
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [orderToCancel, setOrderToCancel] = useState(null);
+
+    // 1. Initial Load
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                const data = await apiClient.get('/api/orders/by-restaurant');
+                data.sort((a, b) => b.id - a.id); // Newest first
+                setOrders(data);
+            } catch (error) {
+                if (isLoading) toast.error("Could not load order history.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        if (user) fetchOrders();
+    }, [user]);
+
+    // 2. Activate WebSocket
+    useOrderWebSocket(setOrders, false);
+
+    // --- NEW: Open Dialog Handler ---
+    const handleCancelClick = (orderId) => {
+        setOrderToCancel(orderId);
+        setCancelDialogOpen(true);
+    };
+
+    // --- NEW: Confirm Cancellation Handler ---
+    const confirmCancel = () => {
+        if (orderToCancel) {
+            handleUpdateStatus(orderToCancel, 'CANCELLED');
+        }
+        setCancelDialogOpen(false);
+        setOrderToCancel(null);
+    };
+
+    const handleUpdateStatus = (orderId, newStatus) => {
+        const promise = apiClient.patch(`/api/orders/${orderId}/status`, { status: newStatus });
+        toast.promise(promise, {
+            loading: 'Updating status...',
+            success: (updatedOrder) => {
+                setOrders(prevOrders => 
+                    prevOrders.map(o => o.id === orderId ? { ...o, status: updatedOrder.status } : o)
+                );
+                return 'Order status updated!';
+            },
+            error: 'Failed to update status.'
+        });
+    };
+    
+    const filteredOrders = useMemo(() => {
+        // --- ADDED: Scheduled Filter Logic ---
+        if (filter === 'SCHEDULED') {
+            // Show orders that HAVE a pickup time and are NOT completed/cancelled
+            return orders.filter(order => 
+                order.pickupTime !== null && 
+                order.status !== 'DELIVERED' && 
+                order.status !== 'CANCELLED'
+            );
+        }
+
+        // For other tabs, generally hide the future scheduled ones to keep "Live" clean
+        // (Optional: You can decide if "ALL" should include scheduled or not)
+        if (filter === 'ALL') return orders;
+        
+        return orders.filter(order => order.status === filter);
+    }, [orders, filter]);
+    
+    const paginatedOrders = useMemo(() => {
+        const startIndex = (page - 1) * ordersPerPage;
+        return filteredOrders.slice(startIndex, startIndex + ordersPerPage);
+    }, [filteredOrders, page, ordersPerPage]);
+
+    const handlePageChange = (event, value) => {
+        setPage(value);
+        window.scrollTo(0, 0);
+    };
+
+    const showPagination = filteredOrders.length > ordersPerPage;
+
+    if (isLoading) {
+        return <CircularProgress />;
+    }
+
+    return (
+        <Box sx={{ pb: 4 }}>
+            <Typography variant="h4" gutterBottom>{t('liveOrdersTitle')}</Typography>
+            <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Typography variant="body1"><strong>{t('filter')}:</strong></Typography>
+                {/* --- ADDED: Scheduled Button --- */}
+                <Button 
+                    variant={filter === 'SCHEDULED' ? 'contained' : 'outlined'} 
+                    color="secondary" // Distinct color
+                    startIcon={<AccessTimeIcon />}
+                    onClick={() => { setFilter('SCHEDULED'); setPage(1); }}
+                >
+                    {t('scheduledFilter')}
+                </Button>
+
+                <Button variant={filter === 'PENDING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PENDING'); setPage(1); }}>{t('pending')}</Button>
+                <Button variant={filter === 'CONFIRMED' ? 'contained' : 'outlined'} onClick={() => { setFilter('CONFIRMED'); setPage(1); }}>{t('confirmed')}</Button>
+                <Button variant={filter === 'PREPARING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PREPARING'); setPage(1); }}>{t('preparing')}</Button>
+                <Button variant={filter === 'ALL' ? 'contained' : 'outlined'} onClick={() => { setFilter('ALL'); setPage(1); }}>{t('showAll')}</Button>
+            </Box>
+            
+            {filteredOrders.length > 0 ? (
+                <>
+                    <Grid container spacing={3} alignItems="stretch">
+                        {paginatedOrders.map(order => (
+                            <Grid item xs={12} sm={6} lg={4} key={order.id} sx={{ display: 'flex' }}>
+                                {/* --- FIX: The Paper component now fills the flex container --- */}
+                                <Paper 
+                                    elevation={3} 
+                                    sx={{ 
+                                        p: 2, 
+                                        width: '100%',
+                                        display: 'flex', 
+                                        flexDirection: 'column', 
+                                        justifyContent: 'space-between', // Push footer to bottom
+                                        borderRadius: 2, 
+                                        border: order.pickupTime ? '2px solid #9c27b0' : 'none',
+                                        // Crucial: No fixed height here! Let content dictate height.
+                                    }}
+                                >
+                                    <Box>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography variant="h6">{t('orderNum', { orderId: order.orderNumber })}</Typography>
+
+                                            {/* ✅ NEW: SHOW DINE-IN OR TAKEAWAY */}
+                                            {order.diningOption === 'DINE_IN' ? (
+                                                <Chip label="DINE-IN" color="primary" size="small" sx={{ fontWeight: 'bold', fontSize: '0.9rem' }} />
+                                            ) : order.diningOption === 'DELIVERY' ? (
+                                            <Chip label="DELIVERY" color="secondary" size="small" sx={{ fontWeight: 'bold', fontSize: '0.9rem' }} />
+                                            ) : (
+                                                <Chip label="TAKEAWAY" color="default" size="small" variant="outlined" />
+                                            )}
+
+                                            {/* ✅ DISPLAY THE ADDRESS FOR THE DRIVER */}
+                                            {order.diningOption === 'DELIVERY' && order.deliveryAddress && (
+                                                <Box sx={{ mt: 1, p: 1, bgcolor: '#fff3e0', borderRadius: 1, border: '1px solid #ffcc80' }}>
+                                                    <Typography variant="body2" fontWeight="bold">📍 {t('deliveryAddress')}:</Typography>
+                                                    <Typography variant="body2">{order.deliveryAddress}</Typography>
+                                                </Box>
+                                            )}
+
+                                            {order.tableNumber && <Chip label={t('forTable', { tableNumber: order.tableNumber })} color="primary" size="small" />}
+
+                                            {/* NEW: ORDER SOURCE CHIP */}
+                                            {order.source === 'POS' ? (
+                                                <Chip icon={<PointOfSaleIcon />} label="POS" size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />
+                                            ) : (
+                                                <Chip icon={<PhoneIphoneIcon />} label="Online" size="small" color="info" sx={{ fontWeight: 'bold' }} />
+                                            )}
+                                            
+                                            {/* --- NEW: Payment Status Chip --- */}
+                                            {order.paymentIntentId ? (
+                                                <Chip label="PAID" color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                                            ) : (
+                                                <Chip label="UNPAID" color="warning" size="small" variant="outlined" />
+                                            )}
+
+                                        </Box>
+                                        
+                                        {order.tableNumber ? (
+                                            // Case 1: It has a table number -> Show "Dine-in"
+                                            <Typography variant="body1" sx={{ mt: 1, color: 'text.primary', fontWeight: 'bold' }}>
+                                                {t('dineIn')}
+                                            </Typography>
+                                        ) : order.pickupTime ? (
+                                            // Case 2: No table, but has specific time -> Show Time
+                                            <Typography variant="body1" sx={{ mt: 1, color: 'secondary.main', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                <AccessTimeIcon fontSize="small"/> 
+                                                {new Date(order.pickupTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
+                                            </Typography>
+                                        ) : (
+                                            // Case 3: No table, No specific time -> Show "Pickup: ASAP"
+                                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{t('pickupAsap')}</Typography>
+                                        )}
+
+                                        <Typography variant="body1" sx={{ mt: 1 }}><strong>{t('statusLabel')}</strong> {t(`orderStatus.${order.status}`, { defaultValue: order.status })}</Typography>
+                                        
+                                        <Divider sx={{ my: 1 }} />
+                                        {/* ✅ SPECIAL INSTRUCTIONS ALERT */}
+                                        {order.specialInstructions && (
+                                            <Box sx={{ mt: 1, p: 1.5, bgcolor: '#fff3cd', borderLeft: '4px solid #ff9800', borderRadius: 1 }}>
+                                                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#e65100' }}>
+                                                    ⚠️ Notes: {order.specialInstructions}
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                        <Box component="ul" sx={{ listStyle: 'none', p: 0, mt: 1 }}>
+                                            {order.items?.map((item, index) => {
+                                                let selectedOptions = [];
+                                                if (item.selectedOptions) try { selectedOptions = JSON.parse(item.selectedOptions); } catch (e) {}
+                                                return (
+                                                    <li key={`${item.menuItemId}-${index}`}>
+                                                        {item.quantity} x {item.name}
+                                                        {selectedOptions.length > 0 && (
+                                                            <Box component="ul" sx={{ pl: 2, fontSize: '0.9rem', color: 'text.secondary' }}>
+                                                                {selectedOptions.map((opt, i) => <li key={i}>{opt}</li>)}
+                                                            </Box>
+                                                        )}
+                                                    </li>
+                                                );
+                                            })}
+                                        </Box>
+                                        <Typography variant="h6" sx={{ mt: 1 }}><strong>{t('total')} : €{order.totalPrice?.toFixed(2)}</strong></Typography>
+                                    </Box>
+                                    
+                                    <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee', display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'CONFIRMED')}>{t('confirm')}</Button>
+                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('preparing')}</Button>
+                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'READY_FOR_PICKUP')}>{t('ready')}</Button>
+                                        <Button size="small" variant="outlined" onClick={() => handleUpdateStatus(order.id, 'DELIVERED')}>{t('deliver')}</Button>
+
+                                        {/* --- ADDED: Cancel Button --- */}
+                                        {/* Only show if order is not completed/cancelled yet */}
+                                        {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+                                            <Button 
+                                                size="small" 
+                                                variant="outlined" 
+                                                color="error" // Red color
+                                                onClick={() => handleCancelClick(order.id)}
+                                            >
+                                                {t('cancel')}
+                                            </Button>
+                                        )}
+                                    </Box>
+                                </Paper>
+                            </Grid>
+                        ))}
+                    </Grid>
+                    {showPagination && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                            <Pagination 
+                                count={Math.ceil(filteredOrders.length / ordersPerPage)} 
+                                page={page} 
+                                onChange={handlePageChange}
+                                color="primary"
+                            />
+                        </Box>
+                    )}
+                </>
+            ) : (
+                <Typography>{t('noOrdersMatchFilter')}</Typography>
+            )}
+            {/* --- ADDED: The Confirmation Dialog --- */}
+            <Dialog
+                open={cancelDialogOpen}
+                onClose={() => setCancelDialogOpen(false)}
+            >
+                <DialogTitle>{t('confirmCancellationTitle')}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {t('confirmCancellationText')}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCancelDialogOpen(false)}>{t('keepOrder')}</Button>
+                    <Button onClick={confirmCancel} color="error" variant="contained" autoFocus>
+                        {t('confirmCancel')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
+}
+
+export default OrderDashboard;

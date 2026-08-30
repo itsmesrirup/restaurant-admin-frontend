@@ -301,5 +301,9 @@
   "preparing_BAKERY": "En Cuisson",
   "preparing_RETAIL": "En cours d'Emballage",
 
-  "enableDineInOrders": "Activer les commandes sur place (Les clients peuvent choisir de manger au restaurant)"
+  "enableDineInOrders": "Activer les commandes sur place (Les clients peuvent choisir de manger au restaurant)",
+  "notifyDelay": "Retard",
+  "notifyDelayTitle": "Informer le client du retard",
+  "notifyDelayMessage": "De combien de minutes cette commande sera-t-elle retardée ?",
+  "mins": "Min"
 }

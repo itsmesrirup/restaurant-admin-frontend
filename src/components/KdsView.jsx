@@ -8,6 +8,8 @@ import notificationSound from '/notification.mp3';
 import { useTranslation } from 'react-i18next';
 import usePageTitle from '../hooks/usePageTitle';
 import { useOrderWebSocket } from '../hooks/useOrderWebSocket';
+import PersonIcon from '@mui/icons-material/Person';
+import PhoneIcon from '@mui/icons-material/Phone';
 
 function KdsView() {
     const { t } = useTranslation();
@@ -101,6 +103,14 @@ function KdsView() {
                                         ) : (
                                             <Chip label="TAKEAWAY" color="default" size="small" variant="outlined" />
                                         )}
+
+                                        {/* ✅ DISPLAY THE ADDRESS FOR THE DRIVER */}
+                                        {order.diningOption === 'DELIVERY' && order.deliveryAddress && (
+                                            <Box sx={{ mt: 1, p: 1, bgcolor: '#fff3e0', borderRadius: 1, border: '1px solid #ffcc80' }}>
+                                                <Typography variant="body2" fontWeight="bold">📍 {t('deliveryAddress')}:</Typography>
+                                                <Typography variant="body2">{order.deliveryAddress}</Typography>
+                                            </Box>
+                                        )}
                                         
                                         {order.tableNumber && <Chip label={t('tableNum', { tableNumber: order.tableNumber })} color="secondary" />}
 
@@ -129,6 +139,32 @@ function KdsView() {
                                     </Box>
 
                                     <Divider sx={{ my: 1 }} />
+                                    {/* ✅ CUSTOMER CONTACT INFO */}
+                                    {order.customerName && (
+                                        <Box sx={{ mt: 2, p: 1.5, bgcolor: '#f0f4f8', borderRadius: 2, border: '1px solid #d9e2ec' }}>
+                                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 'bold', color: '#334e68' }}>
+                                                <PersonIcon fontSize="small" /> {order.customerName}
+                                            </Typography>
+                                            
+                                            {order.customerPhone && (
+                                                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, color: '#334e68' }}>
+                                                    <PhoneIcon fontSize="small" /> 
+                                                    {/* 'tel:' makes it a clickable link that opens the phone app! */}
+                                                    <a href={`tel:${order.customerPhone}`} style={{ color: '#005cc5', textDecoration: 'none', fontWeight: 'bold' }}>
+                                                        {order.customerPhone}
+                                                    </a>
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    )}
+                                    {/* ✅ SPECIAL INSTRUCTIONS ALERT */}
+                                    {order.specialInstructions && (
+                                        <Box sx={{ mt: 1, p: 1.5, bgcolor: '#fff3cd', borderLeft: '4px solid #ff9800', borderRadius: 1 }}>
+                                            <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#e65100' }}>
+                                                ⚠️ Notes: {order.specialInstructions}
+                                            </Typography>
+                                        </Box>
+                                    )}
                                     <Box component="ul" sx={{ listStyle: 'none', p: 0, my: 2 }}>
                                         {order.items?.map((item, index) => {
                                             let selectedOptions = [];
