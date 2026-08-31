@@ -3,36 +3,30 @@ import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { Box, Typography, Button, Paper, Grid, CircularProgress, Chip, Divider } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import AccessTimeIcon from '@mui/icons-material/AccessTime'; // Import
+import AccessTimeIcon from '@mui/icons-material/AccessTime'; 
+import PointOfSaleIcon from '@mui/icons-material/PointOfSale'; 
+import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
 import notificationSound from '/notification.mp3'; 
 import { useTranslation } from 'react-i18next';
 import usePageTitle from '../hooks/usePageTitle';
 import { useOrderWebSocket } from '../hooks/useOrderWebSocket';
-import PersonIcon from '@mui/icons-material/Person';
-import PhoneIcon from '@mui/icons-material/Phone';
 
-function KdsView() {
-    const { t } = useTranslation();
-    usePageTitle(t('kitchenView')); // "Kitchen View | Tablo"
+export default function KdsView() {
+    const { t, i18n } = useTranslation(); // ✅ EXTRACTED i18n for Date Formatting
+    usePageTitle(t('kitchenView'));
     const { user } = useAuth();
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const audio = useMemo(() => new Audio(notificationSound), []);
-    const previousOrderCount = useRef(0);
 
-    // 1. Initial Load (Keep this to populate data on refresh)
     useEffect(() => {
         const fetchKitchenOrders = async () => {
             try {
                 const data = await apiClient.get('/api/orders/by-restaurant/kitchen');
-                // --- SORTING ---
-                // 1. Scheduled items closest to pickup time first
-                // 2. Then ASAP items by ID
                 data.sort((a, b) => {
                     if (a.pickupTime && b.pickupTime) return new Date(a.pickupTime) - new Date(b.pickupTime);
-                    if (a.pickupTime) return 1; // Push scheduled to the end (or -1 to put them first, your choice)
-                    if (b.pickupTime) return -1;
-                    return a.id - b.id;
+                    if (!a.pickupTime && b.pickupTime) return -1;
+                    if (a.pickupTime && !b.pickupTime) return 1;
+                    return a.id - b.id; // Oldest ASAP first
                 });
                 setOrders(data);
             } catch (error) {
@@ -44,120 +38,114 @@ function KdsView() {
         if (user) fetchKitchenOrders();
     }, [user]);
 
-    // 2. Activate WebSocket (Pass true to play sound on new orders)
     useOrderWebSocket(setOrders, true, notificationSound);
 
     const handleUpdateStatus = (orderId, newStatus) => {
-        // Optimistic Update is handled by the WebSocket callback now, 
-        // but keeping it here makes the button click feel instant before the server replies.
-        // However, strictly speaking, you can just fire the API call and let the WS update the UI.
         const promise = apiClient.patch(`/api/orders/${orderId}/status`, { status: newStatus });
+        
         toast.promise(promise, {
-            loading: t('updatingStatus'),
-            success: t('statusUpdated'),
-            error: t('statusUpdateFailed')
+            loading: t('updatingStatus', 'Updating status...'),
+            success: t('statusUpdated', 'Status updated!'),
+            error: t('statusUpdateFailed', 'Failed to update status.')
         });
     };
 
-    // This watches the 'orders' list. If an order's status changes to 'READY_FOR_PICKUP'
-    // (via WebSocket or your click), this filter immediately removes it from the visible list.
     const activeOrders = useMemo(() => {
         return orders.filter(order => 
             order.status === 'CONFIRMED' || order.status === 'PREPARING' || order.status === 'PENDING'
         );
     }, [orders]);
 
-    if (isLoading) return <CircularProgress />;
+    if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
 
     return (
         <Box sx={{ pb: 4 }}>
-            <Typography variant="h4" gutterBottom>{t('kitchenDisplayTitle')}</Typography>
+            <Typography variant="h4" gutterBottom>{t('kitchenDisplayTitle', 'Kitchen Display')}</Typography>
+            
             {activeOrders.length === 0 ? (
-                <Typography>{t('noActiveOrders')}</Typography>
+                <Typography color="text.secondary">{t('noActiveOrders', 'No active orders right now.')}</Typography>
             ) : (
-                // --- FIX: Use alignItems="stretch" here as well ---
-                <Grid container spacing={2} alignItems="stretch">
+                <Grid container spacing={2}>
                     {activeOrders.map(order => (
-                        // --- FIX: Add display: flex to the Grid item ---
-                        <Grid item xs={12} sm={6} md={4} key={order.id} sx={{ display: 'flex' }}>
+                        <Grid item xs={12} sm={6} md={4} lg={3} key={order.id} sx={{ display: 'flex' }}>
                             <Paper 
                                 elevation={3} 
                                 sx={{ 
                                     p: 2, 
-                                    // --- FIX: width 100% and flex column layout ---
-                                    width: '100%',
+                                    width: '100%', // ✅ FORCES UNIFORM WIDTH
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    justifyContent: 'space-between',
-                                    backgroundColor: order.pickupTime ? '#f3e5f5' : (order.status === 'PREPARING' ? 'secondary.light' : 'background.paper'),
-                                    border: order.pickupTime ? '2px solid #9c27b0' : 'none'
+                                    backgroundColor: order.pickupTime ? '#f3e5f5' : (order.status === 'PREPARING' ? '#fff9c4' : 'background.paper'),
+                                    border: order.pickupTime ? '2px solid #9c27b0' : 'none',
+                                    borderRadius: 2
                                 }}
                             >
-                                <Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Box sx={{ flexGrow: 1 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                                         <Typography variant="h5" fontWeight="bold">{t('orderNum', { orderId: order.orderNumber })}</Typography>
-
-                                        {/* ✅ NEW: SHOW DINE-IN OR TAKEAWAY */}
-                                        {order.diningOption === 'DINE_IN' ? (
-                                            <Chip label="DINE-IN" color="primary" size="small" sx={{ fontWeight: 'bold', fontSize: '0.9rem' }} />
-                                        ) : (
-                                            <Chip label="TAKEAWAY" color="default" size="small" variant="outlined" />
-                                        )}
-
-                                        {/* ✅ DISPLAY THE ADDRESS FOR THE DRIVER */}
-                                        {order.diningOption === 'DELIVERY' && order.deliveryAddress && (
-                                            <Box sx={{ mt: 1, p: 1, bgcolor: '#fff3e0', borderRadius: 1, border: '1px solid #ffcc80' }}>
-                                                <Typography variant="body2" fontWeight="bold">📍 {t('deliveryAddress')}:</Typography>
-                                                <Typography variant="body2">{order.deliveryAddress}</Typography>
-                                            </Box>
-                                        )}
                                         
-                                        {order.tableNumber && <Chip label={t('tableNum', { tableNumber: order.tableNumber })} color="secondary" />}
-
-                                        {/* --- NEW: Payment Status Chip --- */}
-                                        {order.paymentIntentId ? (
-                                            <Chip label="PAID" color="success" size="small" sx={{ fontWeight: 'bold' }} />
-                                        ) : (
-                                            <Chip label="UNPAID" color="warning" size="small" variant="outlined" />
-                                        )}
-
+                                        {/* ✅ FULLY TRANSLATED STATUS */}
+                                        <Typography variant="caption" sx={{ fontWeight: 'bold', color: order.status === 'PENDING' ? '#ff9800' : 'text.secondary', textAlign: 'right' }}>
+                                            {t(`orderStatus.${order.status}`, { defaultValue: order.status })}
+                                        </Typography>
                                     </Box>
 
-                                    {/* Date Display (already improved in previous step) */}
-                                    <Box sx={{ mt: 1, mb: 1 }}>
+                                    {/* ✅ FULLY TRANSLATED BADGES WITH WRAP TO PREVENT STRETCHING */}
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2 }}>
+                                        {order.source === 'POS' ? (
+                                            <Chip icon={<PointOfSaleIcon />} label={t('orderSource_POS', 'POS')} size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />
+                                        ) : (
+                                            <Chip icon={<PhoneIphoneIcon />} label={t('orderSource_ONLINE', 'Online')} size="small" color="info" sx={{ fontWeight: 'bold' }} />
+                                        )}
+
+                                        {order.paymentIntentId ? (
+                                            <Chip label={t('payment_PAID', 'PAID')} color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                                        ) : (
+                                            <Chip label={t('payment_UNPAID', 'UNPAID')} color="warning" size="small" variant="outlined" />
+                                        )}
+
+                                        {order.diningOption === 'DINE_IN' ? <Chip label={t('dining_DINE_IN', 'DINE-IN')} color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> : 
+                                         order.diningOption === 'DELIVERY' ? <Chip label={t('dining_DELIVERY', 'DELIVERY')} color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> : 
+                                         <Chip label={t('dining_TAKEAWAY', 'TAKEAWAY')} size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />}
+
+                                        {order.tableNumber && <Chip label={t('tableNum', { tableNumber: order.tableNumber })} color="primary" size="small" sx={{ fontWeight: 'bold' }} />}
+                                    </Box>
+
+                                    {/* ✅ TRANSLATED DATES */}
+                                    <Box sx={{ mb: 1 }}>
                                         {order.pickupTime ? (
                                             <Chip 
                                                 icon={<AccessTimeIcon />} 
-                                                label={new Date(order.pickupTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })} 
+                                                label={new Date(order.pickupTime).toLocaleString(i18n.language, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })} 
                                                 color="secondary" 
                                                 variant="outlined"
-                                                sx={{ fontWeight: 'bold' }}
+                                                sx={{ fontWeight: 'bold', width: '100%', justifyContent: 'flex-start' }}
                                             />
                                         ) : (
-                                            <Chip label={t('pickupAsap')} color="primary" size="small" />
+                                            <Chip icon={<AccessTimeIcon />} label={t('pickupAsap', 'ASAP')} color="primary" size="small" />
                                         )}
                                     </Box>
 
-                                    <Divider sx={{ my: 1 }} />
-                                    {/* ✅ CUSTOMER CONTACT INFO */}
-                                    {order.customerName && (
-                                        <Box sx={{ mt: 2, p: 1.5, bgcolor: '#f0f4f8', borderRadius: 2, border: '1px solid #d9e2ec' }}>
-                                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 'bold', color: '#334e68' }}>
-                                                <PersonIcon fontSize="small" /> {order.customerName}
-                                            </Typography>
-                                            
-                                            {order.customerPhone && (
-                                                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, color: '#334e68' }}>
-                                                    <PhoneIcon fontSize="small" /> 
-                                                    {/* 'tel:' makes it a clickable link that opens the phone app! */}
-                                                    <a href={`tel:${order.customerPhone}`} style={{ color: '#005cc5', textDecoration: 'none', fontWeight: 'bold' }}>
-                                                        {order.customerPhone}
-                                                    </a>
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    )}
-                                    {/* ✅ SPECIAL INSTRUCTIONS ALERT */}
+                                    <Divider sx={{ my: 1.5 }} />
+                                    
+                                    <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, mb: 2 }}>
+                                        {order.items?.map((item, index) => {
+                                            let selectedOptions = [];
+                                            if (item.selectedOptions) try { selectedOptions = JSON.parse(item.selectedOptions); } catch (e) {}
+                                            return (
+                                                <Box component="li" key={`${item.menuItemId}-${index}`} sx={{ mb: 1 }}>
+                                                    <Typography variant="h6" sx={{ lineHeight: 1.2 }}>{item.quantity} x {item.name}</Typography>
+                                                    {selectedOptions.length > 0 && (
+                                                        <Box component="ul" sx={{ pl: 2, fontSize: '0.95rem', color: 'text.secondary', mt: 0.5 }}>
+                                                            {selectedOptions.map((opt, i) => <li key={i}><strong>{opt.optionName}:</strong> {opt.choices.join(', ')}</li>)}
+                                                        </Box>
+                                                    )}
+                                                </Box>
+                                            );
+                                        })}
+                                    </Box>
+
+                                    {/* SPECIAL INSTRUCTIONS ALERT */}
                                     {order.specialInstructions && (
                                         <Box sx={{ mt: 1, p: 1.5, bgcolor: '#fff3cd', borderLeft: '4px solid #ff9800', borderRadius: 1 }}>
                                             <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#e65100' }}>
@@ -165,32 +153,24 @@ function KdsView() {
                                             </Typography>
                                         </Box>
                                     )}
-                                    <Box component="ul" sx={{ listStyle: 'none', p: 0, my: 2 }}>
-                                        {order.items?.map((item, index) => {
-                                            let selectedOptions = [];
-                                            if (item.selectedOptions) try { selectedOptions = JSON.parse(item.selectedOptions); } catch (e) {}
-                                            return (
-                                                <li key={`${item.menuItemId}-${index}`}>
-                                                    <Typography variant="h6">{item.quantity} x {item.name}</Typography>
-                                                    {selectedOptions.length > 0 && (
-                                                        <Box component="ul" sx={{ pl: 2, fontSize: '1rem', color: 'text.secondary' }}>
-                                                            {selectedOptions.map((opt, i) => <li key={i}>{opt}</li>)}
-                                                        </Box>
-                                                    )}
-                                                </li>
-                                            );
-                                        })}
-                                    </Box>
                                 </Box>
-                                <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
-                                    {order.status === 'CONFIRMED' && (
-                                        <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('startPreparing', { context: user?.businessType })}</Button>
-                                    )}
+
+                                {/* ✅ Pinned Action Buttons (Translated) */}
+                                <Box sx={{ mt: 'auto', pt: 2, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
                                     {order.status === 'PENDING' && (
-                                        <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>{t('acceptAndPrepare')}</Button>
+                                        <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>
+                                            {t('acceptAndPrepare', 'Accept & Prepare')}
+                                        </Button>
+                                    )}
+                                    {order.status === 'CONFIRMED' && (
+                                        <Button fullWidth variant="contained" color="warning" onClick={() => handleUpdateStatus(order.id, 'PREPARING')}>
+                                            {t('startPreparing', 'Start Preparing')}
+                                        </Button>
                                     )}
                                     {order.status === 'PREPARING' && (
-                                        <Button fullWidth variant="contained" color="success" startIcon={<CheckCircleIcon />} onClick={() => handleUpdateStatus(order.id, 'READY_FOR_PICKUP')}>{t('markAsReady')}</Button>
+                                        <Button fullWidth variant="contained" color="success" startIcon={<CheckCircleIcon />} onClick={() => handleUpdateStatus(order.id, 'READY_FOR_PICKUP')}>
+                                            {t('markAsReady', 'Mark as Ready')}
+                                        </Button>
                                     )}
                                 </Box>
                             </Paper>
@@ -201,5 +181,3 @@ function KdsView() {
         </Box>
     );
 }
-
-export default KdsView;

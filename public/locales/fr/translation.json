@@ -305,5 +305,16 @@
   "notifyDelay": "Retard",
   "notifyDelayTitle": "Informer le client du retard",
   "notifyDelayMessage": "De combien de minutes cette commande sera-t-elle retardée ?",
-  "mins": "Min"
+  "mins": "Min",
+  "orderSource_ONLINE": "En ligne",
+  "orderSource_POS": "Caisse (POS)",
+  "payment_PAID": "PAYÉ",
+  "payment_UNPAID": "NON PAYÉ",
+  "dining_DINE_IN": "SUR PLACE",
+  "dining_DELIVERY": "LIVRAISON",
+  "dining_TAKEAWAY": "À EMPORTER",
+  "orderItemsLabel": "Articles de la commande",
+  "customerDetailsLabel": "Détails du client",
+  "itemCount_one": "{{count}} article",
+  "itemCount_other": "{{count}} articles"
 }

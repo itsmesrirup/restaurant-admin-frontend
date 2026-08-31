@@ -304,5 +304,16 @@
   "notifyDelay": "Delay",
   "notifyDelayTitle": "Notify Customer of Delay",
   "notifyDelayMessage": "How many minutes late will this order be?",
-  "mins": "Mins"
+  "mins": "Mins",
+  "orderSource_ONLINE": "Online",
+  "orderSource_POS": "POS",
+  "payment_PAID": "PAID",
+  "payment_UNPAID": "UNPAID",
+  "dining_DINE_IN": "DINE-IN",
+  "dining_DELIVERY": "DELIVERY",
+  "dining_TAKEAWAY": "TAKEAWAY",
+  "orderItemsLabel": "Order Items",
+  "customerDetailsLabel": "Customer Details",
+  "itemCount_one": "{{count}} item",
+  "itemCount_other": "{{count}} items"
 }
