@@ -21,7 +21,6 @@ export default function OrderDashboard() {
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState('ALL');
-    const [serviceFilter, setServiceFilter] = useState('ALL'); // ✅ NEW STATE FOR DELIVERY/TAKEAWAY
     const [page, setPage] = useState(1);
     const ordersPerPage = 12;
 
@@ -93,22 +92,10 @@ export default function OrderDashboard() {
     };
     
     const filteredOrders = useMemo(() => {
-        let result = orders;
-
-        // 1. Filter by Status/Time
-        if (filter === 'SCHEDULED') {
-            result = result.filter(o => o.pickupTime !== null && o.status !== 'DELIVERED' && o.status !== 'CANCELLED');
-        } else if (filter !== 'ALL') {
-            result = result.filter(o => o.status === filter);
-        }
-
-        // 2. Filter by Service Type (Takeaway/Delivery/Dine-in)
-        if (serviceFilter !== 'ALL') {
-            result = result.filter(o => o.diningOption === serviceFilter);
-        }
-
-        return result;
-    }, [orders, filter, serviceFilter]);
+        if (filter === 'SCHEDULED') return orders.filter(o => o.pickupTime !== null && o.status !== 'DELIVERED' && o.status !== 'CANCELLED');
+        if (filter === 'ALL') return orders;
+        return orders.filter(o => o.status === filter);
+    }, [orders, filter]);
     
     const paginatedOrders = useMemo(() => {
         const startIndex = (page - 1) * ordersPerPage;
@@ -134,23 +121,13 @@ export default function OrderDashboard() {
                 </Alert>
             )}
 
-            {/* ✅ STATUS FILTERS */}
-            <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                <Typography variant="body1"><strong>Status:</strong></Typography>
-                <Button variant={filter === 'SCHEDULED' ? 'contained' : 'outlined'} color="secondary" startIcon={<AccessTimeIcon />} onClick={() => { setFilter('SCHEDULED'); setPage(1); }}>{t('scheduledFilter', 'Scheduled')}</Button>
-                <Button variant={filter === 'PENDING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PENDING'); setPage(1); }}>{t('pending', 'Pending')}</Button>
-                <Button variant={filter === 'CONFIRMED' ? 'contained' : 'outlined'} onClick={() => { setFilter('CONFIRMED'); setPage(1); }}>{t('confirmed', 'Confirmed')}</Button>
-                <Button variant={filter === 'PREPARING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PREPARING'); setPage(1); }}>{t('preparing', 'Preparing')}</Button>
-                <Button variant={filter === 'ALL' ? 'contained' : 'outlined'} onClick={() => { setFilter('ALL'); setPage(1); }}>{t('showAll', 'All')}</Button>
-            </Box>
-
-            {/* ✅ NEW: SERVICE TYPE FILTERS */}
             <Box sx={{ mb: 4, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                <Typography variant="body1"><strong>Type:</strong></Typography>
-                <Button variant={serviceFilter === 'ALL' ? 'contained' : 'outlined'} color="info" onClick={() => { setServiceFilter('ALL'); setPage(1); }}>{t('showAll', 'All')}</Button>
-                <Button variant={serviceFilter === 'TAKEAWAY' ? 'contained' : 'outlined'} color="info" onClick={() => { setServiceFilter('TAKEAWAY'); setPage(1); }}>{t('takeaway', 'Takeaway')}</Button>
-                <Button variant={serviceFilter === 'DELIVERY' ? 'contained' : 'outlined'} color="info" onClick={() => { setServiceFilter('DELIVERY'); setPage(1); }}>{t('delivery', 'Delivery')}</Button>
-                <Button variant={serviceFilter === 'DINE_IN' ? 'contained' : 'outlined'} color="info" onClick={() => { setServiceFilter('DINE_IN'); setPage(1); }}>{t('eatIn', 'Dine-In')}</Button>
+                <Typography variant="body1"><strong>{t('filter')}:</strong></Typography>
+                <Button variant={filter === 'SCHEDULED' ? 'contained' : 'outlined'} color="secondary" startIcon={<AccessTimeIcon />} onClick={() => { setFilter('SCHEDULED'); setPage(1); }}>{t('scheduledFilter')}</Button>
+                <Button variant={filter === 'PENDING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PENDING'); setPage(1); }}>{t('pending')}</Button>
+                <Button variant={filter === 'CONFIRMED' ? 'contained' : 'outlined'} onClick={() => { setFilter('CONFIRMED'); setPage(1); }}>{t('confirmed')}</Button>
+                <Button variant={filter === 'PREPARING' ? 'contained' : 'outlined'} onClick={() => { setFilter('PREPARING'); setPage(1); }}>{t('preparing')}</Button>
+                <Button variant={filter === 'ALL' ? 'contained' : 'outlined'} onClick={() => { setFilter('ALL'); setPage(1); }}>{t('showAll')}</Button>
             </Box>
             
             {isLoading ? (
@@ -166,11 +143,7 @@ export default function OrderDashboard() {
                                     <Paper 
                                         elevation={2} 
                                         sx={{ 
-                                            p: 2, 
-                                            width: '100%', 
-                                            display: 'flex', 
-                                            flexDirection: 'column', 
-                                            flexGrow: 1,
+                                            p: 2, width: '100%', display: 'flex', flexDirection: 'column', 
                                             borderRadius: 2, cursor: 'pointer', transition: 'all 0.2s',
                                             borderTop: order.status === 'PENDING' ? '4px solid #ff9800' : (order.status === 'READY_FOR_PICKUP' ? '4px solid #4caf50' : '4px solid transparent'),
                                             '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 }
@@ -185,23 +158,23 @@ export default function OrderDashboard() {
                                                 </Typography>
                                             </Box>
                                             
-                                            {/* ✅ WRAPPED BADGES: flexWrap="wrap" stops badges from pushing the card wider */}
+                                            {/* ✅ TRANSLATED CHIPS */}
                                             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2 }}>
                                                 {order.source === 'POS' ? (
-                                                    <Chip icon={<PointOfSaleIcon />} label="POS" size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />
+                                                    <Chip icon={<PointOfSaleIcon />} label={t('orderSource_POS')} size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />
                                                 ) : (
-                                                    <Chip icon={<PhoneIphoneIcon />} label="Online" size="small" color="info" sx={{ fontWeight: 'bold' }} />
+                                                    <Chip icon={<PhoneIphoneIcon />} label={t('orderSource_ONLINE')} size="small" color="info" sx={{ fontWeight: 'bold' }} />
                                                 )}
 
                                                 {order.paymentIntentId ? (
-                                                    <Chip label="PAID" color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                                                    <Chip label={t('payment_PAID')} color="success" size="small" sx={{ fontWeight: 'bold' }} />
                                                 ) : (
-                                                    <Chip label="UNPAID" color="warning" size="small" variant="outlined" />
+                                                    <Chip label={t('payment_UNPAID')} color="warning" size="small" variant="outlined" />
                                                 )}
 
-                                                {order.diningOption === 'DINE_IN' ? <Chip label="DINE-IN" color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> : 
-                                                 order.diningOption === 'DELIVERY' ? <Chip label="DELIVERY" color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> : 
-                                                 <Chip label="TAKEAWAY" size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />}
+                                                {order.diningOption === 'DINE_IN' ? <Chip label={t('dining_DINE_IN')} color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> : 
+                                                 order.diningOption === 'DELIVERY' ? <Chip label={t('dining_DELIVERY')} color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> : 
+                                                 <Chip label={t('dining_TAKEAWAY')} size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />}
 
                                                 {order.tableNumber && <Chip label={t('tableNum', { tableNumber: order.tableNumber })} color="primary" size="small" sx={{ fontWeight: 'bold' }} />}
                                             </Box>
@@ -222,8 +195,9 @@ export default function OrderDashboard() {
                                         <Box sx={{ mt: 'auto', pt: 2 }}>
                                             <Divider sx={{ mb: 1.5 }} />
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <Typography variant="body2" color="text.secondary">{itemCount} items</Typography>
-                                                <Typography variant="subtitle1" fontWeight="bold">€{order.totalPrice?.toFixed(2)}</Typography>
+                                                {/* ✅ TRANSLATED ITEMS PLURALIZATION */}
+                                                <Typography variant="body2" color="text.secondary">{t('itemCount', { count: itemCount })}</Typography>
+                                                <Typography variant="subtitle1" fontWeight="bold">{t('total')} : €{order.totalPrice?.toFixed(2)}</Typography>
                                             </Box>
                                         </Box>
                                     </Paper>
