@@ -104,6 +104,11 @@ export default function OrderDashboard() {
 
     const selectedOrder = orders.find(o => o.id === selectedOrderId);
 
+    const handlePageChange = (event, value) => {
+        setPage(value);
+        window.scrollTo(0, 0);
+    };
+
     const showPagination = filteredOrders.length > ordersPerPage;
 
     return (
