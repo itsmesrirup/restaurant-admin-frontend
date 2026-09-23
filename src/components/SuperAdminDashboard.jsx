@@ -238,8 +238,8 @@ function SuperAdminDashboard() {
         toast.promise(promise, { loading: 'Updating...', success: () => { fetchAllRestaurants(); return 'Business Type updated!'; }, error: 'Failed' });
     };
 
-    const handleDeliveryChange = (restaurantId, enabled, fee) => {
-        const promise = apiClient.patch(`/api/restaurants/${restaurantId}/delivery`, { deliveryEnabled: enabled, deliveryFee: fee });
+    const handleDeliveryChange = (restaurantId, enabled, fee, radius) => {
+        const promise = apiClient.patch(`/api/restaurants/${restaurantId}/delivery`, { deliveryEnabled: enabled, deliveryFee: fee, maxDeliveryRadiusKm: radius });
         toast.promise(promise, {
             loading: 'Updating delivery...',
             success: () => { fetchAllRestaurants(); return 'Delivery updated!'; },
@@ -422,27 +422,38 @@ function SuperAdminDashboard() {
                                     helperText="Click away to save"
                                 />
 
-                                {/* ✅ NEW: DELIVERY TOGGLE & FEE */}
+                                {/* ✅ NEW: DELIVERY TOGGLE, FEE, AND RADIUS */}
                                 <FormControlLabel
                                     control={
                                         <Switch 
                                             size="small"
                                             checked={restaurant.deliveryEnabled || false} 
-                                            onChange={(e) => handleDeliveryChange(restaurant.id, e.target.checked, restaurant.deliveryFee || 0)} 
+                                            onChange={(e) => handleDeliveryChange(restaurant.id, e.target.checked, restaurant.deliveryFee || 0, restaurant.maxDeliveryRadiusKm || 10)} 
                                             color="secondary"
                                         />
                                     }
                                     label={<Typography variant="body2">Delivery</Typography>}
+                                    labelPlacement="start"
                                 />
                                 {restaurant.deliveryEnabled && (
-                                    <TextField
-                                        size="small"
-                                        label="Delivery Fee (€)"
-                                        type="number"
-                                        defaultValue={restaurant.deliveryFee || 0}
-                                        onBlur={(e) => handleDeliveryChange(restaurant.id, true, parseFloat(e.target.value))}
-                                        sx={{ width: 120, m: 1 }}
-                                    />
+                                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                        <TextField
+                                            size="small"
+                                            label="Fee (€)"
+                                            type="number"
+                                            defaultValue={restaurant.deliveryFee || 0}
+                                            onBlur={(e) => handleDeliveryChange(restaurant.id, true, parseFloat(e.target.value), restaurant.maxDeliveryRadiusKm || 10)}
+                                            sx={{ width: 80 }}
+                                        />
+                                        <TextField
+                                            size="small"
+                                            label="Max Radius (km)"
+                                            type="number"
+                                            defaultValue={restaurant.maxDeliveryRadiusKm || 10}
+                                            onBlur={(e) => handleDeliveryChange(restaurant.id, true, restaurant.deliveryFee || 0, parseFloat(e.target.value))}
+                                            sx={{ width: 120 }}
+                                        />
+                                    </Box>
                                 )}
 
                                 <FormControlLabel

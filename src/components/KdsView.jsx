@@ -3,10 +3,10 @@ import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { Box, Typography, Button, Paper, Grid, CircularProgress, Chip, Divider } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import AccessTimeIcon from '@mui/icons-material/AccessTime'; 
-import PointOfSaleIcon from '@mui/icons-material/PointOfSale'; 
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
-import notificationSound from '/notification.mp3'; 
+import notificationSound from '/notification.mp3';
 import { useTranslation } from 'react-i18next';
 import usePageTitle from '../hooks/usePageTitle';
 import { useOrderWebSocket } from '../hooks/useOrderWebSocket';
@@ -42,7 +42,7 @@ export default function KdsView() {
 
     const handleUpdateStatus = (orderId, newStatus) => {
         const promise = apiClient.patch(`/api/orders/${orderId}/status`, { status: newStatus });
-        
+
         toast.promise(promise, {
             loading: t('updatingStatus', 'Updating status...'),
             success: t('statusUpdated', 'Status updated!'),
@@ -51,7 +51,7 @@ export default function KdsView() {
     };
 
     const activeOrders = useMemo(() => {
-        return orders.filter(order => 
+        return orders.filter(order =>
             order.status === 'CONFIRMED' || order.status === 'PREPARING' || order.status === 'PENDING'
         );
     }, [orders]);
@@ -61,17 +61,17 @@ export default function KdsView() {
     return (
         <Box sx={{ pb: 4 }}>
             <Typography variant="h4" gutterBottom>{t('kitchenDisplayTitle', 'Kitchen Display')}</Typography>
-            
+
             {activeOrders.length === 0 ? (
                 <Typography color="text.secondary">{t('noActiveOrders', 'No active orders right now.')}</Typography>
             ) : (
                 <Grid container spacing={2}>
                     {activeOrders.map(order => (
                         <Grid item xs={12} sm={6} md={4} lg={3} key={order.id} sx={{ display: 'flex' }}>
-                            <Paper 
-                                elevation={3} 
-                                sx={{ 
-                                    p: 2, 
+                            <Paper
+                                elevation={3}
+                                sx={{
+                                    p: 2,
                                     width: '100%', // ✅ FORCES UNIFORM WIDTH
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -83,7 +83,7 @@ export default function KdsView() {
                                 <Box sx={{ flexGrow: 1 }}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                                         <Typography variant="h5" fontWeight="bold">{t('orderNum', { orderId: order.orderNumber })}</Typography>
-                                        
+
                                         {/* ✅ FULLY TRANSLATED STATUS */}
                                         <Typography variant="caption" sx={{ fontWeight: 'bold', color: order.status === 'PENDING' ? '#ff9800' : 'text.secondary', textAlign: 'right' }}>
                                             {t(`orderStatus.${order.status}`, { defaultValue: order.status })}
@@ -101,12 +101,19 @@ export default function KdsView() {
                                         {order.paymentIntentId ? (
                                             <Chip label={t('payment_PAID', 'PAID')} color="success" size="small" sx={{ fontWeight: 'bold' }} />
                                         ) : (
-                                            <Chip label={t('payment_UNPAID', 'UNPAID')} color="warning" size="small" variant="outlined" />
+                                            <Chip
+                                                // Example: "UNPAID (CB LIVREUR)"
+                                                label={`${t('payment_UNPAID', 'UNPAID')}${order.offlinePaymentType ? ` - ${order.offlinePaymentType.replace(/_/g, ' ')}` : ''}`}
+                                                color="warning"
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ fontWeight: 'bold' }}
+                                            />
                                         )}
 
-                                        {order.diningOption === 'DINE_IN' ? <Chip label={t('dining_DINE_IN', 'DINE-IN')} color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> : 
-                                         order.diningOption === 'DELIVERY' ? <Chip label={t('dining_DELIVERY', 'DELIVERY')} color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> : 
-                                         <Chip label={t('dining_TAKEAWAY', 'TAKEAWAY')} size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />}
+                                        {order.diningOption === 'DINE_IN' ? <Chip label={t('dining_DINE_IN', 'DINE-IN')} color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> :
+                                            order.diningOption === 'DELIVERY' ? <Chip label={t('dining_DELIVERY', 'DELIVERY')} color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> :
+                                                <Chip label={t('dining_TAKEAWAY', 'TAKEAWAY')} size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />}
 
                                         {order.tableNumber && <Chip label={t('tableNum', { tableNumber: order.tableNumber })} color="primary" size="small" sx={{ fontWeight: 'bold' }} />}
                                     </Box>
@@ -114,10 +121,10 @@ export default function KdsView() {
                                     {/* ✅ TRANSLATED DATES */}
                                     <Box sx={{ mb: 1 }}>
                                         {order.pickupTime ? (
-                                            <Chip 
-                                                icon={<AccessTimeIcon />} 
-                                                label={new Date(order.pickupTime).toLocaleString(i18n.language, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })} 
-                                                color="secondary" 
+                                            <Chip
+                                                icon={<AccessTimeIcon />}
+                                                label={new Date(order.pickupTime).toLocaleString(i18n.language, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                color="secondary"
                                                 variant="outlined"
                                                 sx={{ fontWeight: 'bold', width: '100%', justifyContent: 'flex-start' }}
                                             />
@@ -127,11 +134,11 @@ export default function KdsView() {
                                     </Box>
 
                                     <Divider sx={{ my: 1.5 }} />
-                                    
+
                                     <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, mb: 2 }}>
                                         {order.items?.map((item, index) => {
                                             let selectedOptions = [];
-                                            if (item.selectedOptions) try { selectedOptions = JSON.parse(item.selectedOptions); } catch (e) {}
+                                            if (item.selectedOptions) try { selectedOptions = JSON.parse(item.selectedOptions); } catch (e) { }
                                             return (
                                                 <Box component="li" key={`${item.menuItemId}-${index}`} sx={{ mb: 1 }}>
                                                     <Typography variant="h6" sx={{ lineHeight: 1.2 }}>{item.quantity} x {item.name}</Typography>

@@ -172,9 +172,16 @@ export default function OrderDashboard() {
                                                 )}
 
                                                 {order.paymentIntentId ? (
-                                                    <Chip label={t('payment_PAID')} color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                                                    <Chip label={t('payment_PAID', 'PAID')} color="success" size="small" sx={{ fontWeight: 'bold' }} />
                                                 ) : (
-                                                    <Chip label={t('payment_UNPAID')} color="warning" size="small" variant="outlined" />
+                                                    <Chip 
+                                                        // Example: "UNPAID (CB LIVREUR)"
+                                                        label={`${t('payment_UNPAID', 'UNPAID')}${order.offlinePaymentType ? ` - ${order.offlinePaymentType.replace(/_/g, ' ')}` : ''}`} 
+                                                        color="warning" 
+                                                        size="small" 
+                                                        variant="outlined" 
+                                                        sx={{ fontWeight: 'bold' }} 
+                                                    />
                                                 )}
 
                                                 {order.diningOption === 'DINE_IN' ? <Chip label={t('dining_DINE_IN')} color="secondary" size="small" sx={{ fontWeight: 'bold' }} /> : 
