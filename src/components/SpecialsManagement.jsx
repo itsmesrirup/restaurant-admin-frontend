@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, apiClient } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { 
-    Paper, Typography, Box, TextField, Button, Grid, CircularProgress, 
+import {
+    Paper, Typography, Box, TextField, Button, Grid, CircularProgress,
     Divider, IconButton, List, ListItem, ListItemText, Switch, FormControlLabel,
     Chip
 } from '@mui/material';
@@ -26,7 +26,7 @@ function SpecialsManagement() {
     const [menuFormData, setMenuFormData] = useState(INITIAL_MENU_FORM_STATE);
     const [itemFormData, setItemFormData] = useState(INITIAL_ITEM_FORM_STATE);
     const [editingMenuId, setEditingMenuId] = useState(null);
-    const [editingItemId, setEditingItemId] = useState(null); 
+    const [editingItemId, setEditingItemId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     // --- ADDED: State for the clone modal ---
     const [cloneModalOpen, setCloneModalOpen] = useState(false);
@@ -66,7 +66,7 @@ function SpecialsManagement() {
         const { name, value, type, checked } = e.target;
         setMenuFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
-    
+
     const handleItemFormChange = (e) => setItemFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleSaveMenu = async (e) => {
@@ -86,7 +86,7 @@ function SpecialsManagement() {
             themeColor: menuFormData.themeColor
         };
 
-        const promise = editingMenuId 
+        const promise = editingMenuId
             ? apiClient.put(`/api/special-menus/${editingMenuId}`, payload)
             : apiClient.post('/api/special-menus', payload);
 
@@ -147,7 +147,7 @@ function SpecialsManagement() {
             },
             error: (err) => err.message || t('failedToDeleteMenu')
         });
-        
+
         setDeleteDialogOpen(false);
         setMenuToDelete(null);
     };
@@ -190,12 +190,12 @@ function SpecialsManagement() {
             error: (err) => err.message
         });
     };
-    
+
     const handleEditItem = (item) => {
         setEditingItemId(item.id);
         setItemFormData({ dayTitle: item.dayTitle, name: item.name, description: item.description });
     };
-    
+
     const handleDeleteItem = (itemId) => {
         if (!window.confirm("Are you sure you want to delete this item?")) return;
         toast.promise(apiClient.delete(`/api/special-menus/items/${itemId}`), {
@@ -209,7 +209,7 @@ function SpecialsManagement() {
             error: (err) => err.message
         });
     };
-    
+
     const handleAddItem = async (e) => {
         e.preventDefault();
         toast.promise(apiClient.post(`/api/special-menus/${selectedMenu.id}/items`, itemFormData), {
@@ -217,7 +217,7 @@ function SpecialsManagement() {
             success: (newItem) => {
                 setItemFormData(INITIAL_ITEM_FORM_STATE);
                 // ✅ FIX: Optimistically update the UI for an instant feel
-                const updatedMenus = specialMenus.map(m => 
+                const updatedMenus = specialMenus.map(m =>
                     m.id === selectedMenu.id ? { ...m, items: [...m.items, newItem] } : m
                 );
                 setSpecialMenus(updatedMenus);
@@ -240,7 +240,7 @@ function SpecialsManagement() {
         // Robustly parse the date strings to avoid time zone issues
         const [startY, startM, startD] = menu.startDate.split('-').map(Number);
         const startDate = new Date(startY, startM - 1, startD);
-        
+
         const [endY, endM, endD] = menu.endDate.split('-').map(Number);
         const endDate = new Date(endY, endM - 1, endD);
 
@@ -270,9 +270,9 @@ function SpecialsManagement() {
                                 {/* Use a Grid container for a responsive row */}
                                 <Grid container spacing={2} alignItems="center">
                                     <Grid item xs={12} sm>
-                                        <ListItemText 
-                                            primary={menu.title} 
-                                            secondary={t('activeFromTo', { start: menu.startDate, end: menu.endDate })} 
+                                        <ListItemText
+                                            primary={menu.title}
+                                            secondary={t('activeFromTo', { start: menu.startDate, end: menu.endDate })}
                                         />
                                     </Grid>
                                     <Grid item xs={12} sm="auto" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -286,9 +286,9 @@ function SpecialsManagement() {
                                         <IconButton aria-label={t('delete')} title={t('delete')} onClick={() => handleDeleteClick(menu.id)} color="error">
                                             <DeleteIcon />
                                         </IconButton>
-                                        <Button 
-                                            size="small" 
-                                            variant={selectedMenu?.id === menu.id ? "outlined" : "contained"} 
+                                        <Button
+                                            size="small"
+                                            variant={selectedMenu?.id === menu.id ? "outlined" : "contained"}
                                             onClick={() => setSelectedMenu(menu)}
                                         >
                                             {t('manageItems')}
@@ -343,25 +343,25 @@ function SpecialsManagement() {
                     <Grid item xs={12} sm={6}><TextField label={t('subtitleOptional')} name="subtitle" value={menuFormData.subtitle} onChange={handleMenuFormChange} fullWidth /></Grid>
                     {/* Banner Image URL Field */}
                     <Grid item xs={12} sm={9}>
-                        <TextField 
-                            label="Banner Image URL (For Website)" 
-                            name="bannerImageUrl" 
-                            value={menuFormData.bannerImageUrl} 
-                            onChange={handleMenuFormChange} 
-                            fullWidth 
-                            helperText="Leave blank to only show on the ordering page."
+                        <TextField
+                            label="Banner Media URL (Image, Video, or Gallery)"
+                            name="bannerImageUrl"
+                            value={menuFormData.bannerImageUrl}
+                            onChange={handleMenuFormChange}
+                            fullWidth
+                            helperText="Paste an image URL, an .mp4 video URL, OR paste multiple image URLs separated by commas to create a sliding gallery!"
                         />
                     </Grid>
-                    
+
                     {/* ✅ ADDED: Theme Color Picker */}
                     <Grid item xs={12} sm={3}>
-                        <TextField 
-                            label="Theme Color" 
-                            name="themeColor" 
+                        <TextField
+                            label="Theme Color"
+                            name="themeColor"
                             type="color" // This makes it a native color picker!
-                            value={menuFormData.themeColor} 
-                            onChange={handleMenuFormChange} 
-                            fullWidth 
+                            value={menuFormData.themeColor}
+                            onChange={handleMenuFormChange}
+                            fullWidth
                             sx={{ '& input': { height: '50px', cursor: 'pointer' } }}
                             helperText="Accent color"
                         />
